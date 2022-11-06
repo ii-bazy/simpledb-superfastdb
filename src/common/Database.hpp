@@ -5,15 +5,18 @@
 #include "src/common/Catalog.hpp"
 #include "src/storage/BufferPool.hpp"
 
+class Catalog;
+class BufferPool;
+
 class Database {
    public:
-    static Catalog& get_catalog() { return catalog_; }
+    static Catalog& get_catalog();
 
-    static BufferPool& get_buffer_pool() { return buffer_pool_; }
+    static BufferPool& get_buffer_pool();
 
    private:
-    Database() {}
+    Database();
 
-    static Catalog catalog_;
-    static BufferPool buffer_pool_;
+    inline static std::unique_ptr<Catalog> catalog_;
+    inline static std::unique_ptr<BufferPool> buffer_pool_;
 };

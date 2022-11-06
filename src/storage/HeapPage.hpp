@@ -1,54 +1,26 @@
 #pragma once
 
-#include <vector>
 #include <sstream>
+#include <vector>
 
 #include "src/common/Database.hpp"
-#include "src/storage/Page.hpp"
 #include "src/storage/HeapPageId.hpp"
-#include "src/storage/Tuple.hpp"
+#include "src/storage/Page.hpp"
 #include "src/storage/RecordId.hpp"
+#include "src/storage/Tuple.hpp"
 
-class HeapPage : Page {
-public:
-    HeapPage(std::shared_ptr<HeapPageId> id, const std::vector<char>& data) 
-    : pid_{std::move(id)}, 
-      td_{Database::get_catalog().get_tuple_desc(id->get_table_id())}
-    {
-        num_slots_ = get_num_tuples();
+class HeapPage : public Page {
+   public:
+    HeapPage(std::shared_ptr<PageId> id, const std::vector<char>& data);
 
-        const int header_size = get_header_size();
-        header_ = std::vector(data.begin(), data.begin() + header_size);
+    std::shared_ptr<PageId> get_id() const { return pid_; }
 
-
-        std::istringstream it{std::string(data.begin(), data.end())};
-        it.ignore(header_size);
-
-
-        tuples_.resize(num_slots_);
-        for (int slot_id = 0; slot_id < num_slots_; ++slot_id) {
-            if (!is_slot_used(slot_id)) {
-                it.ignore(td_->get_size());
-            }
-            else {
-                tuples_[slot_id] = read_next_tuple(it, slot_id);
-            }
-        }        
-    }
-
-    std::shared_ptr<HeapPageId> get_id() const {
-        return pid_;
-    }
-
-    static std::vector<char> create_empty_page_data() const {
-        int len = BufferPool::get_page_size();
-        return std::vector<char>(len, 0);
-    }
+    static std::vector<char> create_empty_page_data();
 
     int getNumUnusedSlots() const {
         int unused = 0;
 
-        for (const byte : header_) {
+        for (const auto byte : header_) {
             for (int i = 0; i < 8; ++i) {
                 unused += (byte & (1 << i)) ? 1 : 0;
             }
@@ -57,38 +29,71 @@ public:
         return unused;
     }
 
+    virtual bool has_next() {
+        for (int i = it_index_; i < get_num_tuples(); ++i) {
+            if (is_slot_used(i)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    virtual std::shared_ptr<Tuple> next() override {
+        for (; it_index_ < get_num_tuples(); ++it_index_) {
+            if (is_slot_used(it_index_)) {
+                it_index_ += 1;
+                return tuples_[it_index_ - 1];
+            }
+        }
+
+        throw std::runtime_error("What?");
+    }
+
+    virtual void rewind() override { it_index_ = 0; }
+
+    // TODO:
+    // /**
+    //  * @return an iterator over all tuples on this page (calling remove on
+    //  this iterator throws an UnsupportedOperationException)
+    //  *         (note that this iterator shouldn't return tuples in empty
+    //  slots!)
+    //  */
+    // public Iterator<Tuple> iterator() {
+    //     // TODO: some code goes here
+    //     return null;
+    // }
+
     // TODO:
     // public byte[] getPageData() {}
 
+   private:
+    int it_index_ = 0;
 
-private:
-    std::shared_ptr<HeapPageId> pid_;
+    std::shared_ptr<PageId> pid_;
     const std::shared_ptr<TupleDesc> td_;
 
     int num_slots_;
     std::vector<char> header_;
-    std::vector<Tuple> tuples_;
+    std::vector<std::shared_ptr<Tuple>> tuples_;
 
     std::vector<char> old_data;
     // const char old_data_lock = 0;
 
-    int get_num_tuples() {
-        return (BufferPool::get_page_size() * 8) / (td_->get_size() * 8 + 1);
-    }
+    int get_num_tuples();
 
-    int get_header_size() {
-        return (get_num_tuples() + 7) / 8;
-    }
+    int get_header_size() { return (get_num_tuples() + 7) / 8; }
 
-    Tuple read_next_tuple(std::istringstream& it, int slot_id) {
-        Tuple t(td_);
+    std::shared_ptr<Tuple> read_next_tuple(std::istringstream& it,
+                                           int slot_id) {
+        std::shared_ptr<Tuple> t = std::make_shared<Tuple>(td_);
 
-        
-        std::shared_ptr<RecordId> rid(pid_.get(), slot_id);
-        t.set_record_id(rid);
+        std::shared_ptr<RecordId> rid =
+            std::make_shared<RecordId>(pid_, slot_id);
+        t->set_record_id(rid);
 
         for (int i = 0; i < td_->num_fields(); ++i) {
-            t.set_field(i, td_->get_field_type(i)->parse(it));
+            t->set_field(i, td_->get_field_type(i)->parse(it));
         }
 
         return t;
@@ -99,5 +104,4 @@ private:
         const int bit_position = slot_id % 8;
         return header_[byte_index] & (1 << bit_position);
     }
-
 };

@@ -2,7 +2,7 @@
 
 #include "src/storage/PageId.hpp"
 
-class HeapPageId : PageId {
+class HeapPageId : public PageId {
    public:
     HeapPageId(int table_id, int page_no)
         : table_id_{table_id}, page_no_{page_no} {}

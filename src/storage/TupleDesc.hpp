@@ -1,5 +1,6 @@
 #pragma once
 
+#include <exception>
 #include <memory>
 #include <numeric>
 #include <vector>
@@ -53,14 +54,14 @@ class TupleDesc {
 
     const Type* get_field_type(int i) const { return items_.at(i).field_type; }
 
-    int index_for_field_name(const std::string& name) {
+    int index_for_field_name(const std::string& name) const {
         for (int i = 0; i < static_cast<int>(items_.size()); ++i) {
             if (name == items_[i].field_name) {
                 return i;
             }
         }
 
-        throw std::exception();
+        throw std::invalid_argument("Field name not found.");
     }
 
     int get_size() const {
@@ -71,8 +72,7 @@ class TupleDesc {
     }
 
     static TupleDesc merge(const TupleDesc& td1, const TupleDesc td2) {
-        int size = td1.num_fields() + td2.num_fields();
-
+        const int size = td1.num_fields() + td2.num_fields();
         std::vector<TDItem> items;
         items.reserve(size);
         for (const auto& item : td1.items_) {
@@ -84,9 +84,8 @@ class TupleDesc {
         return TupleDesc(std::move(items));
     };
 
-    bool equals(const TupleDesc& other) {
-        int size = other.num_fields();
-
+    bool equals(const TupleDesc& other) const {
+        const int size = other.num_fields();
         if (size != num_fields()) {
             return false;
         }
@@ -95,16 +94,14 @@ class TupleDesc {
             if (get_field_name(i) != other.get_field_name(i)) {
                 return false;
             }
-
             if (get_field_type(i) != other.get_field_type(i)) {
                 return false;
             }
         }
-
         return true;
     }
 
-    std::string to_string() {
+    std::string to_string() const {
         std::string result = "[";
         for (int i = 0; i < static_cast<int>(items_.size()); ++i) {
             result += items_[i].to_string();
@@ -115,9 +112,8 @@ class TupleDesc {
     }
 
    private:
+    TupleDesc(std::vector<TDItem> items) : items_(std::move(items)) {}
+
     constexpr static inline long serial_version_UID = 1;
-
     std::vector<TDItem> items_;
-
-    TupleDesc(std::vector<TDItem> items) { items_ = std::move(items); }
 };
