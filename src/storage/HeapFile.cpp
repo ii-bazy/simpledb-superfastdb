@@ -72,4 +72,5 @@ void HeapFile::rewind(TransactionId tid) {
 
     current_page_ = Database::get_buffer_pool().get_page(
         &tid, hpid, Permissions::READ_ONLY);
+    current_page_->rewind();
 }

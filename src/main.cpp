@@ -147,15 +147,25 @@ int main(int argc, char** argv) {
     Database::get_catalog().load_schema(
         "/home/domiko/Documents/UWR/simpledb-superfastdb/data/schema.txt");
 
-    TransactionId tid;
+    while (true) {
+        std::string table_name;
+        std::cout << "Table name to seq_scan:";
+        std::cout.flush();
 
-    auto seq_scan =
-        SeqScan(tid, Database::get_catalog().get_table_id("table2"), "");
+        std::cin >> table_name;
+        TransactionId tid;
+        try {
+            auto seq_scan = SeqScan(
+                tid, Database::get_catalog().get_table_id(table_name), "");
 
-    seq_scan.rewind();
-    while (seq_scan.has_next()) {
-        auto tup = seq_scan.next();
-        std::cout << tup->to_string() << "\n";
+            seq_scan.rewind();
+            while (seq_scan.has_next()) {
+                auto tup = seq_scan.next();
+                std::cout << tup->to_string() << "\n";
+            }
+        } catch (const std::exception& e) {
+            std::cerr << "Error:" << e.what() << "\n";
+        }
     }
 
     return 0;
