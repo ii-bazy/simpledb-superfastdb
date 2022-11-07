@@ -14,7 +14,7 @@ class Tuple {
 
     const std::shared_ptr<TupleDesc>& get_tuple_desc() const { return td_; }
 
-    int num_fields() const { return static_cast<int>(fields_.size()); }
+    int num_fields() const { return fields_.size(); }
 
     void set_field(int i, std::shared_ptr<Field> f) {
         fields_.at(i) = std::move(f);

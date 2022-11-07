@@ -11,7 +11,10 @@ class HeapPageId : public PageId {
 
     virtual int get_page_number() const override { return page_no_; }
 
-    virtual int hash_code() override { return 0; }
+    virtual int hash_code() override {
+        // TODO:
+        return 0;
+    }
 
     virtual bool equals(const std::shared_ptr<PageId>& other) override {
         if (dynamic_cast<HeapPageId*>(other.get()) == nullptr) {

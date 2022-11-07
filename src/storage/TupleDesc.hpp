@@ -20,29 +20,25 @@ class TupleDesc {
         std::string to_string() const {
             return field_name + "(" + field_type->to_string() + ")";
         }
-
-       private:
-        constexpr static inline long serial_version_UID = 1;
     };
 
     TupleDesc(const std::vector<const Type*>& types,
               const std::vector<std::string>& names) {
-        // TODO: ASSERT SAME SIZES
+        if (types.size() != names.size()) {
+            throw std::invalid_argument(
+                "Types size and names size must be equal.");
+        }
 
-        int size = types.size();
+        const int size = types.size();
         items_.reserve(size);
-
         for (int i = 0; i < size; ++i) {
             items_.emplace_back(types[i], names[i]);
         }
     }
 
     TupleDesc(const std::vector<const Type*>& types) {
-        // TODO: ASSERT SAME SIZES
-
-        int size = types.size();
+        const int size = types.size();
         items_.reserve(size);
-
         for (int i = 0; i < size; ++i) {
             items_.emplace_back(types[i], "");
         }
@@ -114,6 +110,5 @@ class TupleDesc {
    private:
     TupleDesc(std::vector<TDItem> items) : items_(std::move(items)) {}
 
-    constexpr static inline long serial_version_UID = 1;
     std::vector<TDItem> items_;
 };

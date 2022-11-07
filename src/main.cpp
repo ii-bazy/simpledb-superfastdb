@@ -1,4 +1,3 @@
-// #include "src/storage/Field.hpp"
 #include <gflags/gflags.h>
 #include <glog/logging.h>
 
@@ -79,7 +78,6 @@ void convert(const std::string file_name, std::vector<const Type*> types) {
         int bytes_to_write = bytes_per_page;
 
         for (int i = start_index; i < end_index; ++i) {
-            
             const int index = i - start_index;
             LOG(INFO) << "index: " << index;
             header[index / 8] |= (1 << index % 8);
@@ -116,9 +114,8 @@ void convert(const std::string file_name, std::vector<const Type*> types) {
             // std::cerr << "\n";
         }
 
-        
         LOG(INFO) << "Padding: " << bytes_to_write;
-        
+
         const std::string padding(bytes_to_write, 0);
         out_file.write(reinterpret_cast<const char*>(padding.data()),
                        bytes_to_write);
@@ -153,7 +150,7 @@ int main(int argc, char** argv) {
     TransactionId tid;
 
     auto seq_scan =
-        SeqScan(tid, Database::get_catalog().get_table_id("table1"), "");
+        SeqScan(tid, Database::get_catalog().get_table_id("table2"), "");
 
     seq_scan.rewind();
     while (seq_scan.has_next()) {

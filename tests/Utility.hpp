@@ -8,11 +8,7 @@
 namespace utility {
 
 std::vector<const Type*> get_types(int len) {
-    std::vector<const Type*> types(len);
-    for (auto& type : types) {
-        type = Type::INT_TYPE();
-    }
-    return types;
+    return std::vector<const Type*>(len, Type::INT_TYPE());
 }
 
 std::vector<std::string> get_strings(int len, std::string val) {

@@ -16,20 +16,16 @@ HeapFile::HeapFile(std::ifstream file, std::shared_ptr<TupleDesc> td,
     file_.seekg(current_offset);
 }
 std::shared_ptr<Page> HeapFile::read_page(std::shared_ptr<PageId> pid) {
-
-    LOG(INFO) << "PID\n";
     if (pid->get_page_number() > num_pages()) {
         throw std::invalid_argument("No such page.");
     }
-    LOG(INFO) << "PIDpo\n";
 
     const int page_size = BufferPool::get_page_size();
     const int page_offset = pid->get_page_number() * page_size;
 
-    LOG(INFO) << "PAGE NUM " << pid->get_page_number() << " PAGE ID " << pid->get_table_id() << "\n";
+    LOG(INFO) << "PAGE NUM " << pid->get_page_number() << " PAGE ID "
+              << pid->get_table_id() << "\n";
     LOG(INFO) << "PAGE SIZE " << page_size << " OFFSET " << page_offset << "\n";
-    // LOG(WARNING) << 
-    // LOG(ERROR) << 
 
     file_.seekg(page_offset);
 
@@ -37,11 +33,7 @@ std::shared_ptr<Page> HeapFile::read_page(std::shared_ptr<PageId> pid) {
 
     file_.read(bytes.data(), page_size);
 
-    LOG(INFO) << "NARAZIE OK\n";
-
     auto ptr = std::make_shared<HeapPage>(pid, bytes);
-
-    LOG(INFO) << "mam page\n";
 
     return ptr;
 }
