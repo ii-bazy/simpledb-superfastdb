@@ -144,8 +144,7 @@ int main(int argc, char** argv) {
         return 0;
     }
 
-    Database::get_catalog().load_schema(
-        "/home/domiko/Documents/UWR/simpledb-superfastdb/data/schema.txt");
+    Database::get_catalog().load_schema("data/schema.txt");
 
     while (true) {
         std::string table_name;

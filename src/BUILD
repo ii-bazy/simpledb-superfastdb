@@ -33,13 +33,16 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "@com_github_google_glog//:glog",
-    ]
+    ],
 )
 
 cc_binary(
     name = "main",
     srcs = [
         "main.cpp",
+    ],
+    data = [
+        "//data",
     ],
     deps = [
         "SuperFastDB",
