@@ -14,7 +14,6 @@ class RecordId {
     const PageId* get_page_id() const { return pid_; }
 
    private:
-    // TODO: czy to musi byc shared_ptr?
     const PageId* pid_;
     const int tupleno_;
 };

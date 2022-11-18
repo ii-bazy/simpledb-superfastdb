@@ -1,23 +1,20 @@
 #include "src/common/Catalog.hpp"
 
+#include <absl/strings/str_cat.h>
 #include <glog/logging.h>
 
-Catalog::Catalog() {
-    // TODO(domiko):
-}
+Catalog::Catalog() {}
 
 void Catalog::add_table(std::shared_ptr<DbFile> file, std::string name,
                         std::string pkey_field) {
-    LOG(INFO) << "Adding table. with id: " << file->get_id()
-              << " and name: " << name;
-    db_files_.emplace(file->get_id(), file);
-    table_names_.emplace(file->get_id(), name);
-    primary_keys_.emplace(file->get_id(), pkey_field);
+    const auto file_id = file->get_id();
+    LOG(INFO) << absl::StrCat("Adding new table(id, name, pkey): ", "(",
+                              file_id, ",", name, ",", pkey_field, ")");
 
-    if (name.size() > 0u) {
-        name_to_id_[name] = file->get_id();
-        id_to_name_[file->get_id()] = name;
-    }
+    db_files_[file_id] = std::move(file);
+    name_to_id_[name] = file_id;
+    id_to_name_[file_id] = name;
+    primary_keys_[file_id] = std::move(pkey_field);
 }
 
 void Catalog::add_table(std::shared_ptr<DbFile> file, std::string name) {
@@ -88,7 +85,7 @@ void Catalog::load_schema(std::string catalog_file) {
         if (not file.is_open()) {
             throw std::invalid_argument("Could not open file: " + file_name);
         }
-        
+
         auto td = std::make_shared<TupleDesc>(types, names);
         std::shared_ptr<DbFile> tab = std::make_shared<HeapFile>(
             std::move(file), std::move(td), std::move(file_name));

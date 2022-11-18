@@ -1,4 +1,4 @@
-build --cxxopt='-std=c++20' --cxxopt=-march=native
+build --cxxopt=-std=c++20 --cxxopt=-march=native
 
 # Use with bazel run --config=opt
 build:opt --cxxopt -Ofast

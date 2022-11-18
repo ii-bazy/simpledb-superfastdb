@@ -32,7 +32,10 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
+        "//src/utils",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -48,5 +51,7 @@ cc_binary(
         "SuperFastDB",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
     ],
 )
