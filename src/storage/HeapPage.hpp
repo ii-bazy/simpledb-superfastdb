@@ -13,7 +13,7 @@ class HeapPage : public Page {
    public:
     HeapPage(std::shared_ptr<PageId> id, const std::vector<char>& data);
 
-    std::shared_ptr<PageId> get_id() const { return pid_; }
+    std::shared_ptr<PageId> get_id() const override { return pid_; }
 
     static std::vector<char> create_empty_page_data();
 
@@ -29,47 +29,13 @@ class HeapPage : public Page {
         return unused;
     }
 
-    virtual bool has_next() {
-        for (int i = it_index_; i < get_num_tuples(); ++i) {
-            if (is_slot_used(i)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    virtual std::shared_ptr<Tuple> next() override {
-        for (; it_index_ < get_num_tuples(); ++it_index_) {
-            if (is_slot_used(it_index_)) {
-                it_index_ += 1;
-                return tuples_[it_index_ - 1];
-            }
-        }
-
-        throw std::runtime_error("What?");
-    }
-
-    virtual void rewind() override { it_index_ = 0; }
-
-    // TODO:
-    // /**
-    //  * @return an iterator over all tuples on this page (calling remove on
-    //  this iterator throws an UnsupportedOperationException)
-    //  *         (note that this iterator shouldn't return tuples in empty
-    //  slots!)
-    //  */
-    // public Iterator<Tuple> iterator() {
-    //     // TODO: some code goes here
-    //     return null;
-    // }
+    virtual std::unique_ptr<PageIterator> iterator() override;
 
     // TODO:
     // public byte[] getPageData() {}
 
    private:
-    int it_index_ = 0;
-
+    friend class HeapPageIterator;
     std::shared_ptr<PageId> pid_;
     const std::shared_ptr<TupleDesc> td_;
 
@@ -80,9 +46,9 @@ class HeapPage : public Page {
     std::vector<char> old_data;
     // const char old_data_lock = 0;
 
-    int get_num_tuples();
+    int get_num_tuples() const;
 
-    int get_header_size() { return (get_num_tuples() + 7) / 8; }
+    int get_header_size() const { return (get_num_tuples() + 7) / 8; }
 
     std::shared_ptr<Tuple> read_next_tuple(std::istringstream& it,
                                            int slot_id) {
@@ -99,7 +65,7 @@ class HeapPage : public Page {
         return t;
     }
 
-    bool is_slot_used(int slot_id) {
+    bool is_slot_used(int slot_id) const {
         const int byte_index = slot_id / 8;
         const int bit_position = slot_id % 8;
         return header_[byte_index] & (1 << bit_position);

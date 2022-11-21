@@ -87,7 +87,7 @@ void Catalog::load_schema(std::string catalog_file) {
         }
 
         auto td = std::make_shared<TupleDesc>(types, names);
-        std::shared_ptr<DbFile> tab = std::make_shared<HeapFile>(
+        std::shared_ptr<HeapFile> tab = std::make_shared<HeapFile>(
             std::move(file), std::move(td), std::move(file_name));
         add_table(std::move(tab), table_name);
     }

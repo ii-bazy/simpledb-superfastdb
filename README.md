@@ -47,3 +47,12 @@ example for existing table2.
 ### Catalog Schema
 
     table_name,field_name,field_type,field_name,field_type,...
+
+
+### TODO
+
+DBFileIterator
+DBIterator
+
+obecnie mamy dwa SeqScany ktore sa na tym samym pliki i mamy UB :)
+

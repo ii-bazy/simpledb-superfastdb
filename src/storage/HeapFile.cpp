@@ -38,39 +38,6 @@ std::shared_ptr<Page> HeapFile::read_page(std::shared_ptr<PageId> pid) {
     return ptr;
 }
 
-bool HeapFile::has_next(TransactionId tid) {
-    while (true) {
-        if (current_page_->has_next()) {
-            return true;
-        }
-
-        it_page_index_ += 1;
-        LOG(INFO) << "Jumping to next page: " << it_page_index_;
-
-        if (it_page_index_ >= num_pages()) {
-            LOG(INFO) << "Next page doesn't exist!";
-            return false;
-        }
-
-        std::shared_ptr<PageId> hpid =
-            std::make_shared<HeapPageId>(get_id(), it_page_index_);
-        current_page_ = Database::get_buffer_pool().get_page(
-            &tid, hpid, Permissions::READ_ONLY);
-        current_page_->rewind();
-    }
-
-    return false;
-}
-
-std::shared_ptr<Tuple> HeapFile::next() { return current_page_->next(); }
-
-void HeapFile::rewind(TransactionId tid) {
-    it_page_index_ = 0;
-
-    std::shared_ptr<PageId> hpid =
-        std::make_shared<HeapPageId>(get_id(), it_page_index_);
-
-    current_page_ = Database::get_buffer_pool().get_page(
-        &tid, hpid, Permissions::READ_ONLY);
-    current_page_->rewind();
+std::unique_ptr<DbFileIterator> HeapFile::iterator() {
+    return std::make_unique<HeapFileIterator>(this);
 }

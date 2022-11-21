@@ -1,6 +1,7 @@
 #pragma once
 
 #include "src/storage/PageId.hpp"
+#include "src/storage/PageIterator.hpp"
 #include "src/storage/Tuple.hpp"
 #include "src/transaction/TransactionId.hpp"
 
@@ -12,8 +13,6 @@ class Page {
     // virtual std::vector<char> get_page_data() = 0;
     // virtual Page* get_before_image() = 0;
     // virtual void set_before_image() = 0;
-
-    virtual bool has_next() = 0;
-    virtual std::shared_ptr<Tuple> next() = 0;
-    virtual void rewind() = 0;
+    virtual std::unique_ptr<PageIterator> iterator() = 0;
+    virtual ~Page() = default;
 };

@@ -5,6 +5,7 @@
 #include <string>
 
 #include "src/common/Type.hpp"
+#include "src/execution/OpType.hpp"
 
 class Type;
 
@@ -16,5 +17,6 @@ class Field {
     virtual const Type* get_type() const = 0;
     virtual std::string to_string() const = 0;
     virtual bool operator==(const std::shared_ptr<Field>& other) const = 0;
+    virtual bool compare(const OpType op, const Field* other) const = 0;
     virtual ~Field() = default;
 };

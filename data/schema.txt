@@ -1,2 +1,2 @@
-table1,col1,string,col2,int
+table1,col1,int,col2,int
 table2,col1,int,col2,int,col3,string,col4,string

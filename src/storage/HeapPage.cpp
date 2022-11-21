@@ -26,6 +26,10 @@ std::vector<char> HeapPage::create_empty_page_data() {
     return std::vector<char>(len, 0);
 }
 
-int HeapPage::get_num_tuples() {
+std::unique_ptr<PageIterator> HeapPage::iterator() {
+    return std::make_unique<HeapPageIterator>(this);
+}
+
+int HeapPage::get_num_tuples() const {
     return (BufferPool::get_page_size() * 8) / (td_->get_size() * 8 + 1);
 }

@@ -20,7 +20,7 @@ class Tuple {
         fields_.at(i) = std::move(f);
     }
 
-    const std::shared_ptr<Field>& get_field(int i) const {
+    std::shared_ptr<Field> get_field(int i) const {
         return fields_.at(i);
     }
 
@@ -40,7 +40,7 @@ class Tuple {
                 res += "\t";
             }
         }
-        res += "\n";
+        // res += "\n";
         return res;
     }
 
