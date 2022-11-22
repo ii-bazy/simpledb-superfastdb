@@ -2,6 +2,7 @@
 
 #include <iterator>
 #include <memory>
+#include <string_view>
 
 #include "src/storage/Field.hpp"
 
@@ -16,7 +17,7 @@ class Type {
 
     int get_len() const;
     std::unique_ptr<Field> parse(std::istream& is) const;
-    std::string to_string() const;
+    std::string_view to_string() const;
 
    private:
     enum class TypeEnum { INT_TYPE, STRING_TYPE } type_;

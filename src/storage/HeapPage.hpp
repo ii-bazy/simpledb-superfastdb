@@ -8,14 +8,17 @@
 #include "src/storage/Page.hpp"
 #include "src/storage/RecordId.hpp"
 #include "src/storage/Tuple.hpp"
+#include "src/utils/status_macros.hpp"
 
 class HeapPage : public Page {
    public:
-    HeapPage(std::shared_ptr<PageId> id, const std::vector<char>& data);
-
-    std::shared_ptr<PageId> get_id() const override { return pid_; }
+    // https://abseil.io/tips/42
+    static absl::StatusOr<std::shared_ptr<Page>> Create(
+        std::shared_ptr<PageId> pid, const std::vector<char>& data);
 
     static std::vector<char> create_empty_page_data();
+
+    std::shared_ptr<PageId> get_id() const override { return pid_; }
 
     int getNumUnusedSlots() const {
         int unused = 0;
@@ -34,17 +37,11 @@ class HeapPage : public Page {
     // TODO:
     // public byte[] getPageData() {}
 
+    HeapPage(std::shared_ptr<PageId> id, const std::vector<char>& data,
+             std::shared_ptr<TupleDesc> td);
+
    private:
     friend class HeapPageIterator;
-    std::shared_ptr<PageId> pid_;
-    const std::shared_ptr<TupleDesc> td_;
-
-    int num_slots_;
-    std::vector<char> header_;
-    std::vector<std::shared_ptr<Tuple>> tuples_;
-
-    std::vector<char> old_data;
-    // const char old_data_lock = 0;
 
     int get_num_tuples() const;
 
@@ -55,8 +52,8 @@ class HeapPage : public Page {
         std::shared_ptr<Tuple> t = std::make_shared<Tuple>(td_);
 
         std::shared_ptr<RecordId> rid =
-            std::make_shared<RecordId>(pid_, slot_id);
-        t->set_record_id(rid);
+            std::make_shared<RecordId>(pid_.get(), slot_id);
+        t->set_record_id(std::move(rid));
 
         for (int i = 0; i < td_->num_fields(); ++i) {
             t->set_field(i, td_->get_field_type(i)->parse(it));
@@ -70,4 +67,14 @@ class HeapPage : public Page {
         const int bit_position = slot_id % 8;
         return header_[byte_index] & (1 << bit_position);
     }
+
+    std::shared_ptr<PageId> pid_;
+    std::shared_ptr<TupleDesc> td_;
+
+    int num_slots_;
+    std::vector<char> header_;
+    std::vector<std::shared_ptr<Tuple>> tuples_;
+
+    std::vector<char> old_data;
+    // const char old_data_lock = 0;
 };

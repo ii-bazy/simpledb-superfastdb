@@ -9,6 +9,7 @@
 #include "src/storage/Page.hpp"
 #include "src/storage/PageId.hpp"
 #include "src/transaction/TransactionId.hpp"
+#include "src/utils/status_macros.hpp"
 
 class BufferPool {
    public:
@@ -22,9 +23,9 @@ class BufferPool {
 
     BufferPool(int num_pages = c_default_pages);
 
-    std::shared_ptr<Page> get_page(TransactionId* tid,
-                                   std::shared_ptr<PageId> pid,
-                                   Permissions perm);
+    absl::StatusOr<std::shared_ptr<Page>> get_page(TransactionId* tid,
+                                                   std::shared_ptr<PageId> pid,
+                                                   Permissions perm);
 
    private:
     constexpr static inline int c_default_pages = 50;

@@ -6,8 +6,7 @@
 
 class RecordId {
    public:
-    RecordId(const std::shared_ptr<PageId>& pid, int tupleno)
-        : pid_(pid.get()), tupleno_(tupleno) {}
+    RecordId(const PageId* pid, int tupleno) : pid_(pid), tupleno_(tupleno) {}
 
     int get_tuple_number() const { return tupleno_; }
 

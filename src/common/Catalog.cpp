@@ -3,6 +3,8 @@
 #include <absl/strings/str_cat.h>
 #include <glog/logging.h>
 
+#include "src/utils/split_line.hpp"
+
 Catalog::Catalog() {}
 
 void Catalog::add_table(std::shared_ptr<DbFile> file, std::string name,
@@ -21,69 +23,77 @@ void Catalog::add_table(std::shared_ptr<DbFile> file, std::string name) {
     add_table(std::move(file), std::move(name), "");
 }
 
-int Catalog::get_table_id(const std::string& name) const {
-    const int table_id = name_to_id_.at(name);
-    return table_id;
-}
-
-std::string Catalog::get_table_name(const int id) const {
-    return id_to_name_.at(id);
-}
-
-const std::shared_ptr<TupleDesc>& Catalog::get_tuple_desc(int table_id) const {
-    LOG(INFO) << "Get tuple desc: " << db_files_.size();
-    auto it = db_files_.find(table_id);
-    if (it == db_files_.end()) {
-        throw std::invalid_argument("Unknown table id");
+absl::StatusOr<int> Catalog::get_table_id(const std::string& name) const {
+    if (auto it = name_to_id_.find(name); it != name_to_id_.end()) {
+        return it->second;
     }
-    return it->second->get_tuple_desc();
+    return absl::InvalidArgumentError(
+        absl::StrCat("Invalid table name=", name, "."));
 }
 
-std::shared_ptr<DbFile> Catalog::get_db_file(int table_id) const {
-    LOG(INFO) << "Db files size\t" << db_files_.size() << "\n";
-    auto it = db_files_.find(table_id);
-    if (it == db_files_.end()) {
-        throw std::invalid_argument("No table with id: ");
-        return nullptr;
+absl::StatusOr<std::string> Catalog::get_table_name(const int id) const {
+    if (auto it = id_to_name_.find(id); it != id_to_name_.end()) {
+        return it->second;
     }
-    return it->second;
+    return absl::InvalidArgumentError(
+        absl::StrCat("Invalid table id=", id, "."));
 }
 
-void Catalog::load_schema(std::string catalog_file) {
+absl::StatusOr<std::shared_ptr<TupleDesc>> Catalog::get_tuple_desc(
+    const int id) const {
+    if (auto it = db_files_.find(id); it != db_files_.end()) {
+        return it->second->get_tuple_desc();
+    }
+    return absl::InvalidArgumentError(
+        absl::StrCat("Invalid table id=", id, "."));
+}
+
+absl::StatusOr<std::shared_ptr<DbFile>> Catalog::get_db_file(int id) const {
+    if (auto it = db_files_.find(id); it != db_files_.end()) {
+        return it->second;
+    }
+    return absl::InvalidArgumentError(
+        absl::StrCat("Invalid table id=", id, "."));
+}
+
+absl::Status Catalog::load_schema(std::string catalog_file) {
     std::ifstream file(catalog_file);
     if (!file.is_open()) {
-        throw std::invalid_argument("Catalog file not found.");
+        return absl::InvalidArgumentError("Catalog not found catalog=" +
+                                          catalog_file);
     }
+
     const auto directory =
         std::filesystem::path{catalog_file}.parent_path().string();
 
     std::string line;
     while (std::getline(file, line)) {
-        const auto tokens = split_line(line);
+        const auto tokens = split_line(line, ',');
         const auto table_name = tokens.at(0);
         std::vector<const Type*> types;
         std::vector<std::string> names;
-        std::cerr << "Loading schema :";
+        LOG(INFO) << "Loading schema :";
 
         for (int i = 1; i + 1 < static_cast<int>(tokens.size()); i += 2) {
             names.push_back(tokens[i]);
             const auto type = tokens[i + 1];
-            std::cerr << tokens[i] << ":" << type << ", ";
+            LOG(INFO) << tokens[i] << ":" << type << ", ";
             if (type == "int") {
                 types.push_back(Type::INT_TYPE());
             } else if (type == "string") {
                 types.push_back(Type::STRING_TYPE());
             } else {
-                throw std::invalid_argument("Unknown type: " + type);
+                return absl::InvalidArgumentError("Unknown type: " + type);
             }
         }
-        std::cerr << "\n";
+        LOG(INFO) << "\n";
 
         const std::string file_name = directory + "/" + table_name + ".dat";
         std::ifstream file(file_name, std::ios::binary | std::ios::in);
 
         if (not file.is_open()) {
-            throw std::invalid_argument("Could not open file: " + file_name);
+            return absl::InvalidArgumentError("Could not open file: " +
+                                              file_name);
         }
 
         auto td = std::make_shared<TupleDesc>(types, names);
@@ -91,15 +101,6 @@ void Catalog::load_schema(std::string catalog_file) {
             std::move(file), std::move(td), std::move(file_name));
         add_table(std::move(tab), table_name);
     }
-}
 
-std::vector<std::string> Catalog::split_line(std::string line, char delimeter) {
-    std::stringstream ss(line);
-    std::vector<std::string> res;
-    while (ss.good()) {
-        std::string sub;
-        std::getline(ss, sub, delimeter);
-        res.push_back(std::move(sub));
-    }
-    return res;
+    return absl::OkStatus();
 }

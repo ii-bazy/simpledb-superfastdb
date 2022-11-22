@@ -32,7 +32,7 @@
         if (const ::absl::Status status_macro_internal_adaptor = (expr); \
             status_macro_internal_adaptor.ok()) {                        \
         } else /* NOLINT */                                              \
-            return ::util::StatusBuilder(status_macro_internal_adaptor)
+            return StatusBuilder(status_macro_internal_adaptor)
 
 // Executes an expression that returns an absl::StatusOr, extracting its value
 // into the variable defined by lhs (or returning on error).

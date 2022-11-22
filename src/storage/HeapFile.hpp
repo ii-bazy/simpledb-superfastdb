@@ -14,10 +14,10 @@ class HeapFile : public DbFile {
     HeapFile(std::ifstream file, std::shared_ptr<TupleDesc> td,
              const std::string file_name);
 
-    std::ifstream get_file() {
-        throw std::invalid_argument("Nie wiem po co to narazie");
-        return std::ifstream(".", std::ifstream::in);
-    }
+    // std::ifstream get_file() {
+    //     throw std::invalid_argument("Nie wiem po co to narazie");
+    //     return std::ifstream(".", std::ifstream::in);
+    // }
 
     int get_id() const override { return id_; }
 
@@ -27,17 +27,16 @@ class HeapFile : public DbFile {
 
     int num_pages() const { return num_pages_; }
 
-    std::shared_ptr<Page> read_page(std::shared_ptr<PageId> pid) override;
+    absl::StatusOr<std::shared_ptr<Page>> read_page(
+        std::shared_ptr<PageId> pid) override;
 
     std::unique_ptr<DbFileIterator> iterator() override;
 
-    // TODO: zamknij plik
-
    private:
     friend class HeapFileIterator;
+
     std::shared_ptr<TupleDesc> td_;
     std::ifstream file_;
-
     int num_pages_;
     size_t id_;
 };

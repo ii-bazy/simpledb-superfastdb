@@ -7,6 +7,7 @@
 #include "src/storage/DbFile.hpp"
 #include "src/storage/HeapFile.hpp"
 #include "src/storage/TupleDesc.hpp"
+#include "src/utils/status_builder.hpp"
 
 class Catalog {
    public:
@@ -17,19 +18,17 @@ class Catalog {
 
     void add_table(std::shared_ptr<DbFile> file, std::string name);
 
-    int get_table_id(const std::string& name) const;
+    absl::StatusOr<int> get_table_id(const std::string& name) const;
 
-    std::string get_table_name(const int id) const;
+    absl::StatusOr<std::string> get_table_name(int id) const;
 
-    const std::shared_ptr<TupleDesc>& get_tuple_desc(int table_id) const;
+    absl::StatusOr<std::shared_ptr<TupleDesc>> get_tuple_desc(int id) const;
 
-    std::shared_ptr<DbFile> get_db_file(int table_id) const;
+    absl::StatusOr<std::shared_ptr<DbFile>> get_db_file(int id) const;
 
-    void load_schema(std::string catalog_file);
+    absl::Status load_schema(std::string catalog_file);
 
    private:
-    std::vector<std::string> split_line(std::string line, char delimeter = ',');
-
     std::unordered_map<int, std::shared_ptr<DbFile>> db_files_;
     std::unordered_map<int, std::string> table_names_;
     std::unordered_map<int, std::string> primary_keys_;

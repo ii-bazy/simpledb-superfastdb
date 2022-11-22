@@ -11,9 +11,9 @@
 class Filter : public Operator {
    public:
     Filter(const Predicate p, std::unique_ptr<OpIterator> child)
-        : p_{p}, child_{std::move(child)}, td_{child_->get_tuple_desc()} {}
+        : p_(p), child_(std::move(child)), td_(child_->get_tuple_desc()) {}
 
-    Predicate get_predicate() const { return p_; }
+    const Predicate get_predicate() const { return p_; }
 
     std::shared_ptr<TupleDesc> get_tuple_desc() { return td_; }
 

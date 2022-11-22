@@ -8,17 +8,17 @@
 
 class Operator : public OpIterator {
    public:
-    virtual bool has_next() override {
+    virtual absl::StatusOr<bool> has_next() override {
         if (next_tuple_ == nullptr) {
-            next_tuple_ = fetch_next();
+            ASSIGN_OR_RETURN(next_tuple_, fetch_next());
         }
 
         return next_tuple_ != nullptr;
     }
 
-    virtual std::shared_ptr<Tuple> next() override {
+    virtual absl::StatusOr<std::shared_ptr<Tuple>> next() override {
         if (next_tuple_ == nullptr) {
-            throw std::invalid_argument(
+            return absl::InvalidArgumentError(
                 "Could not fetch next tuple in next() call");
         }
 
@@ -27,9 +27,9 @@ class Operator : public OpIterator {
         return result;
     }
 
-    virtual std::shared_ptr<Tuple> fetch_next() = 0;
-    virtual void rewind() override = 0;
-    virtual std::shared_ptr<TupleDesc> get_tuple_desc() override = 0;
+    virtual absl::StatusOr<std::shared_ptr<Tuple>> fetch_next() = 0;
+    virtual absl::Status rewind() override = 0;
+    virtual std::shared_ptr<TupleDesc> get_tuple_desc() const override = 0;
 
    protected:
     std::shared_ptr<Tuple> next_tuple_ = nullptr;

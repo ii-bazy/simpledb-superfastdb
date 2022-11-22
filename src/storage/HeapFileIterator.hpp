@@ -11,10 +11,9 @@ class HeapFile;
 class HeapFileIterator : public DbFileIterator {
    public:
     HeapFileIterator(HeapFile* file);
-    bool has_next(TransactionId tid) override;
-
-    std::shared_ptr<Tuple> next() override;
-    void rewind(TransactionId tid) override;
+    absl::StatusOr<bool> has_next(TransactionId tid) override;
+    absl::StatusOr<std::shared_ptr<Tuple>> next() override;
+    absl::Status rewind(TransactionId tid) override;
 
    private:
     HeapFile* file_;

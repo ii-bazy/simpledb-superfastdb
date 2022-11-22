@@ -5,6 +5,7 @@
 #include <numeric>
 #include <vector>
 
+#include "absl/strings/str_cat.h"
 #include "src/common/Type.hpp"
 
 class TupleDesc {
@@ -18,7 +19,7 @@ class TupleDesc {
             : field_type{t}, field_name{s} {}
 
         std::string to_string() const {
-            return field_name + "(" + field_type->to_string() + ")";
+            return absl::StrCat(field_name, "(", field_type->to_string(), ")");
         }
     };
 

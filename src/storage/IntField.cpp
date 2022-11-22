@@ -1,4 +1,5 @@
 #include "src/storage/IntField.hpp"
+
 #include <glog/logging.h>
 
 IntField::IntField(int value) : value_(value) {}
@@ -18,21 +19,21 @@ bool IntField::compare(const OpType op, const Field* other) const {
     if (o == nullptr) {
         return false;
     }
-    
+
     switch (op) {
         case OpType::EQUALS:
         case OpType::LIKE:
             return value_ == o->value_;
         case OpType::GREATER_THAN:
-            return value_ > o->value_; 
+            return value_ > o->value_;
         case OpType::LESS_THAN:
-            return value_ < o->value_; 
+            return value_ < o->value_;
         case OpType::LESS_THAN_OR_EQ:
-            return value_ <= o->value_; 
+            return value_ <= o->value_;
         case OpType::GREATER_THAN_OR_EQ:
-            return value_ >= o->value_; 
+            return value_ >= o->value_;
         case OpType::NOT_EQUALS:
-            return value_ != o->value_; 
+            return value_ != o->value_;
     }
     return false;
 }

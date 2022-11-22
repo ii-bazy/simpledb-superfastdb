@@ -1,6 +1,10 @@
 cc_library(
     name = "utils",
+    srcs = [
+        "split_line.cpp",
+    ],
     hdrs = [
+        "split_line.hpp",
         "status_builder.hpp",
         "status_macros.hpp",
     ],

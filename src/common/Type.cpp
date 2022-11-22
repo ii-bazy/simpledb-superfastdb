@@ -21,10 +21,8 @@ int Type::get_len() const {
         case TypeEnum::STRING_TYPE: {
             return STRING_LEN + 4;
         }
-        default: {
-            throw std::exception();
-        }
     }
+    abort();
 }
 
 std::unique_ptr<Field> Type::parse(std::istream& is) const {
@@ -46,15 +44,13 @@ std::unique_ptr<Field> Type::parse(std::istream& is) const {
 
             return std::make_unique<StringField>(str, STRING_LEN);
         }
-        default: {
-            throw std::exception();
-        }
     }
+    abort();
 }
 
-std::string Type::to_string() const {
-    static std::string int_type_str = "INT_TYPE";
-    static std::string string_type_str = "STRING_TYPE";
+std::string_view Type::to_string() const {
+    static constexpr char int_type_str[] = "INT_TYPE";
+    static constexpr char string_type_str[] = "STRING_TYPE";
 
     switch (type_) {
         case TypeEnum::INT_TYPE: {
@@ -63,10 +59,8 @@ std::string Type::to_string() const {
         case TypeEnum::STRING_TYPE: {
             return string_type_str;
         }
-        default: {
-            throw std::exception();
-        }
     }
+    abort();
 }
 
 Type::Type(TypeEnum type) : type_{type} {}

@@ -7,29 +7,20 @@
 
 #include "src/common/Catalog.hpp"
 #include "src/common/Type.hpp"
-#include "src/execution/Filter.hpp"
-#include "src/execution/Join.hpp"
-#include "src/execution/JoinPredicate.hpp"
+// #include "src/execution/Filter.hpp"
+// #include "src/execution/Join.hpp"
+// #include "src/execution/JoinPredicate.hpp"
 #include "src/execution/Operator.hpp"
 #include "src/execution/SeqScan.hpp"
 #include "src/storage/BufferPool.hpp"
 #include "src/storage/IntField.hpp"
 #include "src/storage/Tuple.hpp"
 #include "src/storage/TupleDesc.hpp"
+#include "src/utils/split_line.hpp"
+#include "src/utils/status_macros.hpp"
 
 DEFINE_string(convert, "", "Path to file to convert to binary.");
 DEFINE_string(types, "", "Types of columns in table.");
-
-std::vector<std::string> split_line(std::string line, char delimeter = ',') {
-    std::stringstream ss(line);
-    std::vector<std::string> res;
-    while (ss.good()) {
-        std::string sub;
-        std::getline(ss, sub, delimeter);
-        res.push_back(std::move(sub));
-    }
-    return res;
-}
 
 void convert(const std::string file_name, std::vector<const Type*> types) {
     const int tuple_size = std::accumulate(
@@ -41,7 +32,7 @@ void convert(const std::string file_name, std::vector<const Type*> types) {
     std::string line;
     std::ifstream file(file_name);
     while (std::getline(file, line)) {
-        tuples.push_back(split_line(line));
+        tuples.push_back(split_line(line, ','));
     }
 
     // for (auto row : tuples) {
@@ -129,13 +120,30 @@ void convert(const std::string file_name, std::vector<const Type*> types) {
     out_file.close();
 }
 
+absl::Status test(std::string table_name) {
+    ASSIGN_OR_RETURN(const int table_id,
+                     Database::get_catalog().get_table_id(table_name));
+
+    ASSIGN_OR_RETURN(auto seq_scan,
+                     SeqScan::Create(TransactionId(), table_id, ""));
+
+    std::cout << seq_scan->get_tuple_desc()->to_string() << "\n";
+    for (auto it : *seq_scan) {
+        if (!it.ok()) {
+            return it.status();
+        }
+        std::cerr << (*it)->to_string() << "\n";
+    }
+    return absl::OkStatus();
+}
+
 int main(int argc, char** argv) {
     gflags::ParseCommandLineFlags(&argc, &argv, true);
     google::InitGoogleLogging(argv[0]);
 
     if (FLAGS_convert.size() > 0u) {
         std::vector<const Type*> types;
-        const auto tokens = split_line(FLAGS_types);
+        const auto tokens = split_line(FLAGS_types, ',');
         for (const auto& type : tokens) {
             if (type == "int") {
                 types.push_back(Type::INT_TYPE());
@@ -149,7 +157,10 @@ int main(int argc, char** argv) {
         return 0;
     }
 
-    Database::get_catalog().load_schema("data/schema.txt");
+    if (auto s = Database::get_catalog().load_schema("data/schema.txt");
+        !s.ok()) {
+        LOG(ERROR) << "Failed to load schema: " << s;
+    }
 
     while (true) {
         std::string table_name;
@@ -159,32 +170,36 @@ int main(int argc, char** argv) {
         std::cin >> table_name;
         TransactionId tid;
         try {
-            std::unique_ptr<Field> operand1 = std::make_unique<IntField>(10);
-            std::unique_ptr<OpIterator> t1 = std::make_unique<Filter>(
-                Predicate(0, OpType::LESS_THAN, operand1.get()),
-                std::make_unique<SeqScan>(
-                    tid, Database::get_catalog().get_table_id(table_name),
-                    "T1"));
-
-            std::cerr << "T1 table:\n";
-            for (auto it : *t1) {
-                std::cerr << it->to_string() << "\n";
+            auto s = test(table_name);
+            if (!s.ok()) {
+                LOG(ERROR) << "Test error: " << s;
             }
+            // std::unique_ptr<Field> operand1 = std::make_unique<IntField>(10);
+            // std::unique_ptr<OpIterator> t1 = std::make_unique<Filter>(
+            //     Predicate(0, OpType::LESS_THAN, operand1.get()),
+            //     std::make_unique<SeqScan>(
+            //         tid, Database::get_catalog().get_table_id(table_name),
+            //         "T1"));
 
-            std::unique_ptr<Field> operand2 = std::make_unique<IntField>(5);
-            std::unique_ptr<OpIterator> t2 = std::make_unique<Filter>(
-                Predicate(0, OpType::LESS_THAN, operand2.get()),
-                std::make_unique<SeqScan>(
-                    tid, Database::get_catalog().get_table_id(table_name),
-                    "T2"));
+            // std::cerr << "T1 table:\n";
+            // for (auto it : *t1) {
+            //     std::cerr << it->to_string() << "\n";
+            // }
 
-            std::cerr << "T2 table:\n";
-            for (auto it : *t2) {
-                std::cerr << it->to_string() << "\n";
-            }
+            // std::unique_ptr<Field> operand2 = std::make_unique<IntField>(5);
+            // std::unique_ptr<OpIterator> t2 = std::make_unique<Filter>(
+            //     Predicate(0, OpType::LESS_THAN, operand2.get()),
+            //     std::make_unique<SeqScan>(
+            //         tid, Database::get_catalog().get_table_id(table_name),
+            //         "T2"));
 
-            auto seq_scan = Join(JoinPredicate(0, OpType::EQUALS, 0),
-                                 std::move(t1), std::move(t2));
+            // std::cerr << "T2 table:\n";
+            // for (auto it : *t2) {
+            //     std::cerr << it->to_string() << "\n";
+            // }
+
+            // auto seq_scan = Join(JoinPredicate(0, OpType::EQUALS, 0),
+            //  std::move(t1), std::move(t2));
 
             // Filter seq_scan =(
 
@@ -192,13 +207,6 @@ int main(int argc, char** argv) {
             //         tid, Database::get_catalog().get_table_id(table_name),
             //         ""));
 
-            // auto seq_scan = SeqScan(
-            //     tid, Database::get_catalog().get_table_id(table_name), "");
-
-            std::cout << seq_scan.get_tuple_desc()->to_string() << "\n";
-            for (auto it : seq_scan) {
-                std::cerr << it->to_string() << "\n";
-            }
         } catch (const std::exception& e) {
             std::cerr << "Error:" << e.what() << "\n";
         }

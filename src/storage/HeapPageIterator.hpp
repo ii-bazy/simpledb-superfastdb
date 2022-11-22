@@ -8,11 +8,14 @@ class HeapPageIterator : public PageIterator {
    public:
     HeapPageIterator(HeapPage* page);
 
-    bool has_next() override;
+    absl::StatusOr<bool> has_next() override;
 
-    std::shared_ptr<Tuple> next() override;
+    absl::StatusOr<std::shared_ptr<Tuple>> next() override;
 
-    void rewind() override { it_index_ = 0; }
+    absl::Status rewind() override {
+        it_index_ = 0;
+        return absl::OkStatus();
+    }
 
    private:
     HeapPage* page_;

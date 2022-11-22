@@ -12,6 +12,7 @@ class IntField : public Field {
     std::string to_string() const;
     bool operator==(const std::shared_ptr<Field>& other) const;
     bool compare(const OpType op, const Field* other) const;
+
    private:
     const int value_;
 };
