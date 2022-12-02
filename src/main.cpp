@@ -39,7 +39,7 @@ void convert(const std::string file_name, std::vector<const Type*> types) {
     std::vector<std::vector<std::string>> tuples;
 
     std::string line;
-    std::ifstream file(file_name);
+    std::fstream file(file_name);
     while (std::getline(file, line)) {
         tuples.push_back(split_line(line));
     }

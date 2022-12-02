@@ -50,7 +50,7 @@ std::shared_ptr<DbFile> Catalog::get_db_file(int table_id) const {
 }
 
 void Catalog::load_schema(std::string catalog_file) {
-    std::ifstream file(catalog_file);
+    std::fstream file(catalog_file);
     if (!file.is_open()) {
         throw std::invalid_argument("Catalog file not found.");
     }
@@ -80,7 +80,7 @@ void Catalog::load_schema(std::string catalog_file) {
         std::cerr << "\n";
 
         const std::string file_name = directory + "/" + table_name + ".dat";
-        std::ifstream file(file_name, std::ios::binary | std::ios::in);
+        std::fstream file(file_name, std::ios::binary | std::ios::in);
 
         if (not file.is_open()) {
             throw std::invalid_argument("Could not open file: " + file_name);

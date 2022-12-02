@@ -4,7 +4,7 @@
 
 #include "src/storage/HeapPageId.hpp"
 
-HeapFile::HeapFile(std::ifstream file, std::shared_ptr<TupleDesc> td,
+HeapFile::HeapFile(std::fstream file, std::shared_ptr<TupleDesc> td,
                    const std::string file_name)
     : td_{std::move(td)},
       file_{std::move(file)},

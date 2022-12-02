@@ -17,7 +17,7 @@ class HeapPage : public Page {
 
     static std::vector<char> create_empty_page_data();
 
-    int getNumUnusedSlots() const {
+    int get_num_unused_slots() const {
         int unused = 0;
 
         for (const auto byte : header_) {
@@ -30,6 +30,37 @@ class HeapPage : public Page {
     }
 
     virtual std::unique_ptr<PageIterator> iterator() override;
+
+    void insert_tuple(std::shared_ptr<Tuple> t) {
+        // TODO: check desciptor mismatch? ?? 
+        // TODO: Need to make diry?
+
+        for (int i = 0; i < get_num_tuples; ++i) {
+            if (not is_slot_used(i)) {
+                tuples_[i] = t;
+                t->set_record_id = std::make_shared<RecordId>(pid_, i);
+                return ;
+            }
+        }
+
+        throw std::invalid_argument("No free slot on this page");
+    }
+
+    void delete_tuple(std::shared_ptr<Tuple> t) {
+        // TODO: Need to make diry?
+        const int slot_index = t->get_record_id()->get_tuple_number();
+
+        if (not t->get_record_id()->get_page_id()->equals(pid_)) {
+            throw std::invalid_argument("Trying to delete tuple from wrong page.");
+        }
+
+        if (not is_slot_used(slot_index)) {
+            throw std::invalid_argument("Trying to delete tuple from empty slot.");
+        }
+
+        mark_slot_unused(slot_index);
+        tuples_[slot_index] = nullptr;
+    }
 
     // TODO:
     // public byte[] getPageData() {}
@@ -69,5 +100,11 @@ class HeapPage : public Page {
         const int byte_index = slot_id / 8;
         const int bit_position = slot_id % 8;
         return header_[byte_index] & (1 << bit_position);
+    }
+
+    void mark_slot_unused(const int slot_index) {
+        const int byte_index = slot_id / 8;
+        const int bit_position = slot_id % 8;
+        return header_[byte_index] ^ header_[byte_index];
     }
 };
