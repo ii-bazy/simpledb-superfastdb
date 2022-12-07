@@ -5,6 +5,8 @@ IntField::IntField(int value) : value_(value) {}
 
 int IntField::get_value() const { return value_; }
 
+std::size_t IntField::hash() const { return get_value(); }
+
 void IntField::serialize(std::ostream& os) {
     os.write(reinterpret_cast<const char*>(&value_), sizeof(value_));
 }

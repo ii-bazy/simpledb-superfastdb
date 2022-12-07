@@ -16,6 +16,9 @@
 #include "src/storage/IntField.hpp"
 #include "src/storage/Tuple.hpp"
 #include "src/storage/TupleDesc.hpp"
+#include "src/execution/IntegerAggregator.hpp"
+#include "src/execution/StringAggregator.hpp"
+#include "src/execution/Aggregate.hpp"
 
 DEFINE_string(convert, "", "Path to file to convert to binary.");
 DEFINE_string(types, "", "Types of columns in table.");
@@ -183,9 +186,15 @@ int main(int argc, char** argv) {
                 std::cerr << it->to_string() << "\n";
             }
 
-            auto seq_scan = Join(JoinPredicate(0, OpType::EQUALS, 0),
-                                 std::move(t1), std::move(t2));
+            auto seq_scan = std::make_unique<Join>(Join(JoinPredicate(0, OpType::EQUALS, 0),
+                                 std::move(t1), std::move(t2)));
 
+            std::cerr << "Join table:\n";
+            for (auto it : *seq_scan) {
+                std::cerr << it->to_string() << "\n";
+            }
+
+            auto agg = Aggregate(std::move(seq_scan), 0, 1, AggregatorOp::COUNT);
             // Filter seq_scan =(
 
             //     std::make_unique<SeqScan>(
@@ -195,8 +204,8 @@ int main(int argc, char** argv) {
             // auto seq_scan = SeqScan(
             //     tid, Database::get_catalog().get_table_id(table_name), "");
 
-            std::cout << seq_scan.get_tuple_desc()->to_string() << "\n";
-            for (auto it : seq_scan) {
+            std::cout << agg.get_tuple_desc()->to_string() << "\n";
+            for (auto it : agg) {
                 std::cerr << it->to_string() << "\n";
             }
         } catch (const std::exception& e) {

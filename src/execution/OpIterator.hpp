@@ -36,7 +36,6 @@ class OpIterator {
     };
 
     auto begin() { return Iterator(this); }
-
     auto end() { return Sentinel(); };
     virtual ~OpIterator() = default;
 };

@@ -41,3 +41,52 @@ std::shared_ptr<Page> HeapFile::read_page(std::shared_ptr<PageId> pid) {
 std::unique_ptr<DbFileIterator> HeapFile::iterator() {
     return std::make_unique<HeapFileIterator>(this);
 }
+
+std::vector<std::shared_ptr<Page>> HeapFile::insert_tuple(
+    const TransactionId& tid,
+    std::shared_ptr<Tuple> t) {
+
+    auto& buffer_pool = Database::get_buffer_pool();
+    for (int page_index = 0; page_index < num_pages(); ++page_index) {
+        const std::shared_ptr<PageId> page_id = std::make_shared<HeapPageId>(get_id(), page_index);
+        auto page = buffer_pool.get_page(&tid, page_id, Permissions::READ_WRITE);
+        if (page->get_num_unused_slots()) {
+            page->insert_tuple(t);
+
+            return std::vector<std::shared_ptr<Page>> {page};
+        }
+    }
+
+    // Page with empty slot not found
+    const auto empty_page_data = HeapPage::create_empty_page_data();
+    file_.seekg(0, std::ios::end);
+    file_.write(empty_page_data.data(), empty_page_data.size());
+    num_pages_++;
+
+    auto new_page = buffer_pool.get_page(
+        &tid,
+        std::make_shared<HeapPageId>(get_id(), num_pages() - 1),
+        Permissions::READ_WRITE
+    );
+
+    new_page->insert_tuple(t);
+
+    return std::vector<std::shared_ptr<Page>> {new_page};
+}
+
+
+std::vector<std::shared_ptr<Page>> HeapFile::delete_tuple(
+    const TransactionId& tid,
+    std::shared_ptr<Tuple> t) {
+
+    auto& buffer_pool = Database::get_buffer_pool();
+    const std::shared_ptr<PageId> page_id = std::make_shared<HeapPageId>(
+        get_id(),
+        t->get_record_id()->get_page_id()->get_page_number()
+    );
+
+    auto page = buffer_pool.get_page(&tid, page_id, Permissions::READ_WRITE);
+    page->delete_tuple(t);
+
+    return std::vector<std::shared_ptr<Page>> {page};
+}

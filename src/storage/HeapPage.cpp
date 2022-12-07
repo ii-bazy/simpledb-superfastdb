@@ -21,11 +21,6 @@ HeapPage::HeapPage(std::shared_ptr<PageId> id, const std::vector<char>& data)
     }
 }
 
-std::vector<char> HeapPage::create_empty_page_data() {
-    int len = BufferPool::get_page_size();
-    return std::vector<char>(len, 0);
-}
-
 std::unique_ptr<PageIterator> HeapPage::iterator() {
     return std::make_unique<HeapPageIterator>(this);
 }

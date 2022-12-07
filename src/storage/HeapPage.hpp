@@ -15,7 +15,8 @@ class HeapPage : public Page {
 
     std::shared_ptr<PageId> get_id() const override { return pid_; }
 
-    static std::vector<char> create_empty_page_data();
+    bool is_dirty() const override { return is_dirty_; }
+    void set_dirty_state(TransactionId* tid, bool state) override { is_dirty_ = state; }
 
     int get_num_unused_slots() const {
         int unused = 0;
@@ -33,12 +34,13 @@ class HeapPage : public Page {
 
     void insert_tuple(std::shared_ptr<Tuple> t) {
         // TODO: check desciptor mismatch? ?? 
-        // TODO: Need to make diry?
 
-        for (int i = 0; i < get_num_tuples; ++i) {
+        set_dirty_state(nullptr, true);
+
+        for (int i = 0; i < get_num_tuples(); ++i) {
             if (not is_slot_used(i)) {
                 tuples_[i] = t;
-                t->set_record_id = std::make_shared<RecordId>(pid_, i);
+                t->set_record_id(std::make_shared<RecordId>(pid_, i));
                 return ;
             }
         }
@@ -47,7 +49,7 @@ class HeapPage : public Page {
     }
 
     void delete_tuple(std::shared_ptr<Tuple> t) {
-        // TODO: Need to make diry?
+        set_dirty_state(nullptr, true);
         const int slot_index = t->get_record_id()->get_tuple_number();
 
         if (not t->get_record_id()->get_page_id()->equals(pid_)) {
@@ -102,9 +104,9 @@ class HeapPage : public Page {
         return header_[byte_index] & (1 << bit_position);
     }
 
-    void mark_slot_unused(const int slot_index) {
+    void mark_slot_unused(const int slot_id) {
         const int byte_index = slot_id / 8;
         const int bit_position = slot_id % 8;
-        return header_[byte_index] ^ header_[byte_index];
+        header_[byte_index] ^= header_[byte_index];
     }
 };

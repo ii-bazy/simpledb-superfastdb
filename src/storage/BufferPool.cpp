@@ -7,7 +7,7 @@ BufferPool::BufferPool(int num_pages) : num_pages_(num_pages) {
     page_count_ = 0;
 }
 
-std::shared_ptr<Page> BufferPool::get_page(TransactionId* tid,
+std::shared_ptr<Page> BufferPool::get_page(const TransactionId* tid,
                                            std::shared_ptr<PageId> pid,
                                            Permissions perm) {
     LOG(INFO) << "Get page(table_id, page_number): (" << pid->get_table_id()
@@ -33,4 +33,18 @@ std::shared_ptr<Page> BufferPool::get_page(TransactionId* tid,
     auto new_page = db_file->read_page(pid);
     pages_[{pid->get_table_id(), pid->get_page_number()}] = new_page;
     return new_page;
+}
+
+void BufferPool::insert_tuple(TransactionId tid, int table_id, std::shared_ptr<Tuple> t) {
+    auto db_file = Database::get_catalog().get_db_file(table_id);
+    db_file->insert_tuple(tid, t);
+}
+
+void BufferPool::delete_tuple(TransactionId tid, std::shared_ptr<Tuple> t) {
+    auto page = get_page(
+        &tid, 
+        std::make_shared<PageId>(t->get_record_id()->get_page_id()), 
+        Permissions::READ_WRITE);
+
+    page->delete_tuple(t);
 }
