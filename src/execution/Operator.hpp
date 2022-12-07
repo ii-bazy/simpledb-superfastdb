@@ -28,8 +28,6 @@ class Operator : public OpIterator {
     }
 
     virtual std::shared_ptr<Tuple> fetch_next() = 0;
-    virtual void rewind() override = 0;
-    virtual std::shared_ptr<TupleDesc> get_tuple_desc() override = 0;
 
    protected:
     std::shared_ptr<Tuple> next_tuple_ = nullptr;

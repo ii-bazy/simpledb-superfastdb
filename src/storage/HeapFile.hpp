@@ -31,11 +31,11 @@ class HeapFile : public DbFile {
 
     std::unique_ptr<DbFileIterator> iterator() override;
 
-    std::vector<std::shared_ptr<Page>> insert_tuple(const TransactionId& tid,
-                                                    std::shared_ptr<Tuple> t);
+    std::vector<std::shared_ptr<Page>> insert_tuple(
+        const TransactionId& tid, std::shared_ptr<Tuple> t) override;
 
-    std::vector<std::shared_ptr<Page>> delete_tuple(const TransactionId& tid,
-                                                    std::shared_ptr<Tuple> t);
+    std::vector<std::shared_ptr<Page>> delete_tuple(
+        const TransactionId& tid, std::shared_ptr<Tuple> t) override;
 
     // TODO: zamknij plik
 

@@ -2,12 +2,12 @@
 #include "src/execution/OpIterator.hpp"
 
 class Aggregator : public OpIterator {
- public:
+   public:
     constexpr static int NO_GROUPING = -1;
-    virtual std::shared_ptr<Tuple> next() = 0;
-    virtual void rewind() = 0;
-    virtual bool has_next() = 0;
-    virtual std::shared_ptr<TupleDesc> get_tuple_desc() override { throw std::invalid_argument("SHOULD NOT ASK AGGREGATOR FOR TUPLE_DESC"); }
+
+    virtual std::shared_ptr<TupleDesc> get_tuple_desc() override {
+        throw std::invalid_argument("SHOULD NOT ASK AGGREGATOR FOR TUPLE_DESC");
+    }
 
     virtual void merge_tuple_into_group(std::shared_ptr<Tuple> tuple) = 0;
 };

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <exception>
 #include <unordered_map>
 
 #include "src/common/Type.hpp"
@@ -9,13 +10,14 @@
 
 class StringAggregator : public Aggregator {
    public:
-    StringAggregator(int gb_field, const Type* gb_field_type, int acum_field,
-                     const AggregatorOp op)
-        : gb_field_(gb_field),
-          gb_field_type_(gb_field_type),
-          acum_field_(acum_field),
-          op_(op),
-          count_(0) {
+    StringAggregator(int gb_field, const Type* gb_field_type,
+                     int acum_field [[maybe_unused]], const AggregatorOp op)
+        : gb_field_(gb_field), count_(0) {
+        if (op != AggregatorOp::COUNT) {
+            throw std::invalid_argument(
+                "StringAggregator works only with COUNT!");
+        }
+
         if (gb_field != NO_GROUPING) {
             td_ = std::make_shared<TupleDesc>(
                 std::vector<const Type*>{gb_field_type, Type::INT_TYPE()});
@@ -38,7 +40,7 @@ class StringAggregator : public Aggregator {
         idx_ = 0;
     }
 
-    bool has_next() override { return idx_ < tuples_.size(); }
+    bool has_next() override { return idx_ < (int)tuples_.size(); }
 
     std::shared_ptr<TupleDesc> get_tuple_desc() override { return td_; }
 
@@ -68,9 +70,7 @@ class StringAggregator : public Aggregator {
         }
     }
 
-    const int gb_field_, acum_field_;
-    const AggregatorOp op_;
-    const Type* gb_field_type_;
+    const int gb_field_;
 
     std::unordered_map<std::shared_ptr<Field>, int> count_map_;
     int count_;

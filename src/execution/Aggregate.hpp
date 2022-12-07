@@ -1,4 +1,4 @@
-r#pragma once
+#pragma once
 
 #include <memory>
 

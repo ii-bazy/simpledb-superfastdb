@@ -18,7 +18,7 @@ class SeqScan : public OpIterator {
 
     SeqScan(TransactionId tid, const int table_id)
         : SeqScan(tid, table_id,
-                  Database::get_catalog().get_table_name(table_id_)) {}
+                  Database::get_catalog().get_table_name(table_id)) {}
 
     std::string get_table_name() const {
         return Database::get_catalog().get_table_name(table_id_);

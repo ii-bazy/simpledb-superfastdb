@@ -16,9 +16,12 @@ class HeapPage : public Page {
     std::shared_ptr<PageId> get_id() const override { return pid_; }
 
     bool is_dirty() const override { return is_dirty_; }
-    void set_dirty_state(TransactionId* tid, bool state) override { is_dirty_ = state; }
+    void set_dirty_state(TransactionId* tid [[maybe_unused]],
+                         bool state) override {
+        is_dirty_ = state;
+    }
 
-    int get_num_unused_slots() const {
+    int get_num_unused_slots() const override {
         int unused = 0;
 
         for (const auto byte : header_) {
@@ -32,8 +35,8 @@ class HeapPage : public Page {
 
     virtual std::unique_ptr<PageIterator> iterator() override;
 
-    void insert_tuple(std::shared_ptr<Tuple> t) {
-        // TODO: check desciptor mismatch? ?? 
+    void insert_tuple(std::shared_ptr<Tuple> t) override {
+        // TODO: check desciptor mismatch? ??
 
         set_dirty_state(nullptr, true);
 
@@ -41,23 +44,25 @@ class HeapPage : public Page {
             if (not is_slot_used(i)) {
                 tuples_[i] = t;
                 t->set_record_id(std::make_shared<RecordId>(pid_, i));
-                return ;
+                return;
             }
         }
 
         throw std::invalid_argument("No free slot on this page");
     }
 
-    void delete_tuple(std::shared_ptr<Tuple> t) {
+    void delete_tuple(std::shared_ptr<Tuple> t) override {
         set_dirty_state(nullptr, true);
         const int slot_index = t->get_record_id()->get_tuple_number();
 
         if (not t->get_record_id()->get_page_id()->equals(pid_)) {
-            throw std::invalid_argument("Trying to delete tuple from wrong page.");
+            throw std::invalid_argument(
+                "Trying to delete tuple from wrong page.");
         }
 
         if (not is_slot_used(slot_index)) {
-            throw std::invalid_argument("Trying to delete tuple from empty slot.");
+            throw std::invalid_argument(
+                "Trying to delete tuple from empty slot.");
         }
 
         mark_slot_unused(slot_index);
@@ -107,6 +112,6 @@ class HeapPage : public Page {
     void mark_slot_unused(const int slot_id) {
         const int byte_index = slot_id / 8;
         const int bit_position = slot_id % 8;
-        header_[byte_index] ^= header_[byte_index];
+        header_[byte_index] &= ~(1 << bit_position);
     }
 };

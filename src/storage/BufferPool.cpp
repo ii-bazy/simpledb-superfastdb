@@ -35,16 +35,14 @@ std::shared_ptr<Page> BufferPool::get_page(const TransactionId* tid,
     return new_page;
 }
 
-void BufferPool::insert_tuple(TransactionId tid, int table_id, std::shared_ptr<Tuple> t) {
+void BufferPool::insert_tuple(TransactionId tid, int table_id,
+                              std::shared_ptr<Tuple> t) {
     auto db_file = Database::get_catalog().get_db_file(table_id);
     db_file->insert_tuple(tid, t);
 }
 
 void BufferPool::delete_tuple(TransactionId tid, std::shared_ptr<Tuple> t) {
-    auto page = get_page(
-        &tid, 
-        std::make_shared<PageId>(t->get_record_id()->get_page_id()), 
-        Permissions::READ_WRITE);
-
-    page->delete_tuple(t);
+    auto db_file = Database::get_catalog().get_db_file(
+        t->get_record_id()->get_page_id()->get_table_id());
+    db_file->delete_tuple(tid, t);
 }
