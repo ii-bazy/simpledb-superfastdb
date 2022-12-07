@@ -7,18 +7,18 @@
 
 #include "src/common/Catalog.hpp"
 #include "src/common/Type.hpp"
+#include "src/execution/Aggregate.hpp"
 #include "src/execution/Filter.hpp"
+#include "src/execution/IntegerAggregator.hpp"
 #include "src/execution/Join.hpp"
 #include "src/execution/JoinPredicate.hpp"
 #include "src/execution/Operator.hpp"
 #include "src/execution/SeqScan.hpp"
+#include "src/execution/StringAggregator.hpp"
 #include "src/storage/BufferPool.hpp"
 #include "src/storage/IntField.hpp"
 #include "src/storage/Tuple.hpp"
 #include "src/storage/TupleDesc.hpp"
-#include "src/execution/IntegerAggregator.hpp"
-#include "src/execution/StringAggregator.hpp"
-#include "src/execution/Aggregate.hpp"
 
 DEFINE_string(convert, "", "Path to file to convert to binary.");
 DEFINE_string(types, "", "Types of columns in table.");
@@ -132,6 +132,8 @@ void convert(const std::string file_name, std::vector<const Type*> types) {
     out_file.close();
 }
 
+
+
 int main(int argc, char** argv) {
     gflags::ParseCommandLineFlags(&argc, &argv, true);
     google::InitGoogleLogging(argv[0]);
@@ -162,51 +164,54 @@ int main(int argc, char** argv) {
         std::cin >> table_name;
         TransactionId tid;
         try {
-            std::unique_ptr<Field> operand1 = std::make_unique<IntField>(10);
-            std::unique_ptr<OpIterator> t1 = std::make_unique<Filter>(
-                Predicate(0, OpType::LESS_THAN, operand1.get()),
-                std::make_unique<SeqScan>(
-                    tid, Database::get_catalog().get_table_id(table_name),
-                    "T1"));
+            // std::unique_ptr<Field> operand1 = std::make_unique<IntField>(10);
+            // std::unique_ptr<OpIterator> t1 = std::make_unique<Filter>(
+            //     Predicate(0, OpType::LESS_THAN, operand1.get()),
+            //     std::make_unique<SeqScan>(
+            //         tid, Database::get_catalog().get_table_id(table_name),
+            //         "T1"));
 
-            std::cerr << "T1 table:\n";
-            for (auto it : *t1) {
-                std::cerr << it->to_string() << "\n";
-            }
+            // std::cerr << "T1 table:\n";
+            // for (auto it : *t1) {
+            //     std::cerr << it->to_string() << "\n";
+            // }
 
-            std::unique_ptr<Field> operand2 = std::make_unique<IntField>(5);
-            std::unique_ptr<OpIterator> t2 = std::make_unique<Filter>(
-                Predicate(0, OpType::LESS_THAN, operand2.get()),
-                std::make_unique<SeqScan>(
-                    tid, Database::get_catalog().get_table_id(table_name),
-                    "T2"));
+            // std::unique_ptr<Field> operand2 = std::make_unique<IntField>(5);
+            // std::unique_ptr<OpIterator> t2 = std::make_unique<Filter>(
+            //     Predicate(0, OpType::LESS_THAN, operand2.get()),
+            //     std::make_unique<SeqScan>(
+            //         tid, Database::get_catalog().get_table_id(table_name),
+            //         "T2"));
 
-            std::cerr << "T2 table:\n";
-            for (auto it : *t2) {
-                std::cerr << it->to_string() << "\n";
-            }
+            // std::cerr << "T2 table:\n";
+            // for (auto it : *t2) {
+            //     std::cerr << it->to_string() << "\n";
+            // }
 
-            auto seq_scan = std::make_unique<Join>(Join(JoinPredicate(0, OpType::EQUALS, 0),
-                                 std::move(t1), std::move(t2)));
+            // auto seq_scan = std::make_unique<Join>(Join(JoinPredicate(0,
+            // OpType::EQUALS, 0),
+            //                      std::move(t1), std::move(t2)));
 
-            std::cerr << "Join table:\n";
-            for (auto it : *seq_scan) {
-                std::cerr << it->to_string() << "\n";
-            }
+            // std::cerr << "Join table:\n";
+            // for (auto it : *seq_scan) {
+            //     std::cerr << it->to_string() << "\n";
+            // }
 
-            auto agg = Aggregate(std::move(seq_scan), 0, 1, AggregatorOp::COUNT);
-            // Filter seq_scan =(
+            // auto agg = Aggregate(std::move(seq_scan), 0, 1,
+            // AggregatorOp::COUNT); Filter seq_scan =(
 
             //     std::make_unique<SeqScan>(
             //         tid, Database::get_catalog().get_table_id(table_name),
             //         ""));
 
-            // auto seq_scan = SeqScan(
-            //     tid, Database::get_catalog().get_table_id(table_name), "");
+            auto seq_scan = SeqScan(
+                tid, Database::get_catalog().get_table_id(table_name), "");
 
-            std::cout << agg.get_tuple_desc()->to_string() << "\n";
-            for (auto it : agg) {
-                std::cerr << it->to_string() << "\n";
+            std::cout << seq_scan.get_tuple_desc()->to_string() << "\n";
+            for (int i = 0; i < 10; ++i) {
+                for (auto it : seq_scan) {
+                    // std::cerr << it->to_string() << "\n";
+                }
             }
         } catch (const std::exception& e) {
             std::cerr << "Error:" << e.what() << "\n";

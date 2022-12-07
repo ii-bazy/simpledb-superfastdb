@@ -15,12 +15,19 @@ std::shared_ptr<Page> BufferPool::get_page(const TransactionId* tid,
     auto it = pages_.find({pid->get_table_id(), pid->get_page_number()});
 
     if (it != pages_.end()) {
+        recently_used_it_ = it;
         LOG(INFO) << "Page found in buffer pool.";
+        LOG(WARNING) << "HIT";
         return it->second;
     }
 
+    LOG(WARNING) << "MISS";
     if (static_cast<int>(pages_.size()) >= num_pages_) {
-        throw std::logic_error("For now we have limit for pages.");
+        if (recently_used_it_ == pages_.end()) {
+            throw std::logic_error("Page limit equal to 0?");
+        }
+        LOG(WARNING) << "Removing " << recently_used_it_->second->get_id();
+        pages_.erase(recently_used_it_);
     }
 
     LOG(INFO) << "Get db_file from catalog.";
@@ -31,7 +38,10 @@ std::shared_ptr<Page> BufferPool::get_page(const TransactionId* tid,
     }
 
     auto new_page = db_file->read_page(pid);
-    pages_[{pid->get_table_id(), pid->get_page_number()}] = new_page;
+    recently_used_it_ =
+        pages_.insert({{pid->get_table_id(), pid->get_page_number()}, new_page})
+            .first;
+
     return new_page;
 }
 

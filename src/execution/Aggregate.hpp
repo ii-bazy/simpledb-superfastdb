@@ -1,13 +1,15 @@
 #pragma once
 
+#include <absl/strings/str_cat.h>
+#include <glog/logging.h>
+
 #include <memory>
 
 #include "src/execution/Aggregator.hpp"
 #include "src/execution/AggregatorOp.hpp"
+#include "src/execution/IntegerAggregator.hpp"
 #include "src/execution/Operator.hpp"
-
-#include <glog/logging.h>
-#include <absl/strings/str_cat.h>
+#include "src/execution/StringAggregator.hpp"
 
 class Aggregate : public OpIterator {
    public:
@@ -35,12 +37,18 @@ class Aggregate : public OpIterator {
                     aggregate_field_name});
         }
 
-        const Type* group_type = (group_field_ == Aggregator::NO_GROUPING ? nullptr : child_->get_tuple_desc()->get_field_type(group_field_));
+        const Type* group_type =
+            (group_field_ == Aggregator::NO_GROUPING
+                 ? nullptr
+                 : child_->get_tuple_desc()->get_field_type(group_field_));
 
-        if (child_->get_tuple_desc()->get_field_type(agg_field_) == Type::INT_TYPE()) {
-            aggregator_ = std::make_unique<IntegerAggregator>(group_field_, group_type, agg_field_, op);
+        if (child_->get_tuple_desc()->get_field_type(agg_field_) ==
+            Type::INT_TYPE()) {
+            aggregator_ = std::make_unique<IntegerAggregator>(
+                group_field_, group_type, agg_field_, op);
         } else {
-            aggregator_ = std::make_unique<StringAggregator>(group_field_, group_type, agg_field_, op);
+            aggregator_ = std::make_unique<StringAggregator>(
+                group_field_, group_type, agg_field_, op);
         }
 
         for (auto t : *child_) {
