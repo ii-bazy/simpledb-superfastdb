@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 enum class OpType {
     EQUALS,
     GREATER_THAN,
@@ -9,3 +11,7 @@ enum class OpType {
     LIKE,
     NOT_EQUALS
 };
+
+std::string to_string(const OpType op);
+
+OpType flip_op_type(const OpType op);

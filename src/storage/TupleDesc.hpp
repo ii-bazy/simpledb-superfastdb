@@ -4,6 +4,7 @@
 #include <memory>
 #include <numeric>
 #include <vector>
+#include <absl/strings/str_cat.h>
 
 #include "src/common/Type.hpp"
 
@@ -57,7 +58,8 @@ class TupleDesc {
             }
         }
 
-        throw std::invalid_argument("Field name not found.");
+        throw std::invalid_argument(
+            absl::StrCat("Field ", name, " not found."));
     }
 
     int get_size() const {

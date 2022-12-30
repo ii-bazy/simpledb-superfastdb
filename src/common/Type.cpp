@@ -53,8 +53,8 @@ std::unique_ptr<Field> Type::parse(std::istream& is) const {
 }
 
 std::string Type::to_string() const {
-    static std::string int_type_str = "INT_TYPE";
-    static std::string string_type_str = "STRING_TYPE";
+    static std::string int_type_str = "int";
+    static std::string string_type_str = "str";
 
     switch (type_) {
         case TypeEnum::INT_TYPE: {

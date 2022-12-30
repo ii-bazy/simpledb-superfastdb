@@ -1,3 +1,5 @@
 table1,col1,int,col2,int
 table2,col1,int,col2,int,col3,string,col4,string
 table_big,col1,string,col2,string
+first_table,name1,int,name2,string,name3,int
+second_table,name1,int,name2,string,name3,int
