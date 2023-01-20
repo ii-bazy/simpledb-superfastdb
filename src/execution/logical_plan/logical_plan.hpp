@@ -47,6 +47,9 @@ class LogicalPlan {
 
     void Dump();
 
+    // TODO: Map<String, TableStats> baseTableStats, boolean explain)
+    std::unique_ptr<OpIterator> PhysicalPlan(TransactionId tid); 
+
    private:
     // Returns InvalidArgumentError if this reference is invalid.
     absl::Status CheckColumnRef(ColumnRef ref);

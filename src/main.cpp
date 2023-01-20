@@ -19,6 +19,8 @@
 #include "src/storage/IntField.hpp"
 #include "src/storage/Tuple.hpp"
 #include "src/storage/TupleDesc.hpp"
+#include "src/execution/logical_plan/logical_plan.hpp"
+#include "src/parser.hpp"
 
 DEFINE_string(convert, "", "Path to file to convert to binary.");
 DEFINE_string(types, "", "Types of columns in table.");
@@ -156,6 +158,25 @@ int main(int argc, char** argv) {
 
     Database::get_catalog().load_schema("data/schema.txt");
 
+    const auto query = "SELECT col1, col2 FROM table1 WHERE col1 < 10";
+
+    
+    std::unique_ptr<Parser> parser = std::make_unique<Parser>();
+    auto lp = parser->ParseQuery(query).value(); // I'm ok with crash.
+    
+    auto it = lp.PhysicalPlan(TransactionId());
+
+    std::cout << it->get_tuple_desc()->to_string() << "\n";
+    // for (int i = 0; i < 10; ++i) {
+    for (auto itt : *it) {
+        std::cerr << itt->to_string() << "\n";
+    }
+    
+
+    // lt.PhysicalPlan(TransactionId());
+    
+
+    return 0;
     while (true) {
         std::string table_name;
         std::cout << "Table name to seq_scan:";

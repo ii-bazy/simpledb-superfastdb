@@ -18,6 +18,14 @@ struct ColumnRef {
     bool IsStar() { return table == "null" && column == "*"; }
 
     operator std::string() const { return table + "." + column; }
+
+    bool operator==(const ColumnRef& other) const {
+        return table == other.table && column == other.column;
+    }
+    
+    bool operator!=(const ColumnRef& other) const {
+        return table != other.table || column != other.column;
+    }
 };
 
 const ColumnRef COLUMN_REF_STAR("null", "*");

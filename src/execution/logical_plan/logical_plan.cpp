@@ -8,6 +8,8 @@
 #include "src/common/Database.hpp"
 #include "src/utils/status_macros.hpp"
 #include "src/execution/AggregatorOp.hpp"
+#include "src/execution/SeqScan.hpp"
+#include "src/execution/Filter.hpp"
 
 absl::Status LogicalPlan::CheckColumnRef(ColumnRef ref) {
     if (ref.IsStar()) return absl::OkStatus();
@@ -174,3 +176,133 @@ void LogicalPlan::Dump() {
               << " ";
     std::cout << (order == OrderBy::ASCENDING ? "asc" : "desc") << "\n";
 };
+
+std::unique_ptr<OpIterator> LogicalPlan::PhysicalPlan(TransactionId tid) {
+    // TODO: ??? DLACZEGO TO JAKO ZMIENNE W KLASIE
+    absl::flat_hash_map<std::string, std::unique_ptr<OpIterator>> subplan_map;
+    
+    absl::flat_hash_map<std::string, std::string> equiv_map;
+    absl::flat_hash_map<std::string, float> filter_selectivities;
+    // absl::flat_hash_map<std::string, TABLE STATS> stats_map;
+
+    for (const auto& scan_node : scans) {
+        auto ss = std::make_unique<SeqScan>(
+            tid,
+            scan_node.id,
+            scan_node.alias 
+        );
+
+        subplan_map[scan_node.alias] = std::move(ss);
+
+        std::string base_table_name = Database::get_catalog()
+            .get_table_name(scan_node.id);
+
+        // TODO: STATSY
+        // statsMap.put(baseTableName, baseTableStats.get(baseTableName));
+    //     filterSelectivities.put(table.alias, 1.0);
+    }
+
+    for (const auto& filter_node : filters) {
+        auto& sub_plan = subplan_map[filter_node.lcol.table];
+        if (sub_plan == nullptr) {
+            // TODO: exception
+        }
+
+        auto it = alias_to_id.find(filter_node.lcol.table);
+        auto td = Database::get_catalog().get_tuple_desc(it->second);
+
+        auto filter = std::make_unique<Filter>(
+            Predicate(td->index_for_field_name(filter_node.lcol.column), 
+                        filter_node.op, filter_node.constant.get()),
+            std::move(sub_plan)
+        );
+
+        sub_plan = std::move(filter);
+    }
+
+
+    // JoinOptimizer jo = new JoinOptimizer(this, joins);
+    // joins = jo.orderJoins(statsMap, filterSelectivities, explain);
+    
+    for (const auto& join_node : joins) {
+        std::unique_ptr<OpIterator> plan_1 = nullptr;
+        std::unique_ptr<OpIterator> plan_2 = nullptr;
+        bool is_subquery_join = join_node.subplan != nullptr;
+        std::string t1_name, t2_name;
+
+        if (equiv_map.contains(join_node.lref.column)) {
+            t1_name = equiv_map[join_node.lref.column];
+        } else {
+            t1_name = join_node.lref.column;
+        }
+
+        if (equiv_map.contains(join_node.rref.column)) {
+            t2_name = equiv_map[join_node.rref.column];
+        } else {
+            t2_name = join_node.rref.column;
+        }
+
+        auto plan_ptr = subplan_map.find(t1_name);
+        plan_1 = std::move(plan_ptr->second);
+        subplan_map.erase(plan_ptr);
+
+        if (is_subquery_join) {
+            plan_2 = join_node.subplan->PhysicalPlan(tid);
+
+            if (plan_2 == nullptr) { throw "Plan 2 not working!!!"; }
+        } else {
+            auto plan_ptr = subplan_map.find(t2_name);
+            plan_2 = std::move(plan_ptr->second);
+            subplan_map.erase(plan_ptr);
+        }
+
+        if (plan_1 == nullptr) { throw "Unknow table in WHERE clause plan_1"; }
+        if (plan_2 == nullptr) { throw "Unknow table in WHERE clause plan_1"; }
+        
+        std::unique_ptr<OpIterator> j = nullptr;
+
+        // j = JoinOptimizer.instantiateJoin(lj, plan1, plan2);
+
+        subplan_map[t1_name] = std::move(j);
+
+        if (!is_subquery_join) {
+            subplan_map.erase(subplan_map.find(t2_name));
+            equiv_map[t2_name] = t1_name;
+
+            for (auto& [key, value] : equiv_map) {
+                if (value == t2_name) {
+                    value = t1_name;
+                }
+            }
+        }
+    }
+
+    if (subplan_map.size() > 1) {
+        throw "Query does not include join expressions joining all nodes!";
+    }
+
+    std::unique_ptr<OpIterator> node = std::move(subplan_map.begin()->second);
+
+    return node;
+    // TODO:
+
+    std::vector<int> out_fields;
+    std::vector<const Type*> out_types;
+
+    for (const auto& select_node : selects) {
+        if (select_node.ref == agg_column) {
+            // if (si.aggOp != null) <- odpowienik
+
+            out_fields.push_back(group_by_column != ColumnRef{}
+            ? 1
+            : 0);
+
+            
+
+        }
+    }
+
+
+    return nullptr;
+}
+
