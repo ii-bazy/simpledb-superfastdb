@@ -19,7 +19,7 @@ class IntegerAggregator : public Aggregator {
           op_{op} {
         switch (op_) {
             case AggregatorOp::NONE:
-                throw "Int Aggregation over NONE operator";
+                throw std::invalid_argument("Int Aggregation over NONE operator");
             case AggregatorOp::MIN:
                 accumulator_value_ = std::numeric_limits<int>::max();
                 break;
@@ -65,7 +65,7 @@ class IntegerAggregator : public Aggregator {
 
         switch (op_) {
             case AggregatorOp::NONE:
-                throw "String Aggregation over NONE operator";
+                throw std::invalid_argument("String Aggregation over NONE operator");
             case AggregatorOp::MIN:
                 accumulator_value_ = std::min(acumulator, field_value);
                 break;
@@ -83,7 +83,7 @@ class IntegerAggregator : public Aggregator {
                 acumulator += 1;
                 break;
             default:
-                throw "siema";
+                throw std::invalid_argument("siema");
         }
     }
 

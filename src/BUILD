@@ -36,6 +36,7 @@ cc_library(
         "execution/Predicate.hpp",
         "execution/SeqScan.hpp",
         "execution/StringAggregator.hpp",
+        "execution/Project.hpp",
         "execution/logical_plan/column_ref.hpp",
         "execution/logical_plan/filter_node.hpp",
         "execution/logical_plan/join_node.hpp",

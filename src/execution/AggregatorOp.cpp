@@ -1,3 +1,5 @@
+#include <stdexcept>
+
 #include "src/execution/AggregatorOp.hpp"
 
 std::string to_string(AggregatorOp op) {
@@ -18,7 +20,7 @@ std::string to_string(AggregatorOp op) {
         case AggregatorOp::SC_AVG:
             return "lab7 ;)";
         default:
-            throw "?";
+            throw std::invalid_argument("?");
     }
 }
 
@@ -41,5 +43,5 @@ AggregatorOp get_aggregator_op(std::string agg_name) {
     if (agg_name == "count") {
         return AggregatorOp::COUNT;
     }
-    throw "?";
+    throw std::invalid_argument("?");
 }

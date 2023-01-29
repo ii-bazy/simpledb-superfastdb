@@ -158,15 +158,28 @@ int main(int argc, char** argv) {
 
     Database::get_catalog().load_schema("data/schema.txt");
 
-    const auto query = "SELECT col1, col2 FROM table1 WHERE col1 < 10";
+    // const auto query = "SELECT count(age) FROM table3 WHERE country = 'Italy'";
 
+
+    // TODO: NIE DA SIE SELECT age, count(*) FROM table3 WHERE country = 'Italy' GROUP BY age
+    // bo index_for_field_name throwuje dla * tak powinno byc ?????
+    const auto query = "SELECT * FROM table3,table1 WHERE table3.age < table1.col1";
+
+    // const auto query = "SELECT * FROM table3 WHERE table3.country = 'Italy'";
     
     std::unique_ptr<Parser> parser = std::make_unique<Parser>();
     auto lp = parser->ParseQuery(query).value(); // I'm ok with crash.
     
-    auto it = lp.PhysicalPlan(TransactionId());
 
+    lp.Dump();
+
+    // exit(1);
+
+    auto it = lp.PhysicalPlan(TransactionId());
     std::cout << it->get_tuple_desc()->to_string() << "\n";
+    for (int i = 0; i < it->get_tuple_desc()->num_fields(); ++i) {
+        std::cerr << "Field: " << i << "\tname: " << it->get_tuple_desc()->get_field_name(i) << std::endl;
+    }
     // for (int i = 0; i < 10; ++i) {
     for (auto itt : *it) {
         std::cerr << itt->to_string() << "\n";
