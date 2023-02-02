@@ -47,6 +47,14 @@ class LogicalPlan {
 
     void Dump();
 
+    absl::flat_hash_map<std::string, int> get_table_alias_to_id_mapping() {
+        return alias_to_id;
+    }
+
+    int get_table_id(std::string alias) {
+        return alias_to_id[alias];
+    }
+
     // TODO: Map<String, TableStats> baseTableStats, boolean explain)
     std::unique_ptr<OpIterator> PhysicalPlan(TransactionId tid); 
 

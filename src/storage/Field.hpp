@@ -26,7 +26,7 @@ class Field {
 // ;)
 template <>
 struct std::hash<std::shared_ptr<Field>> {
-    constexpr std::size_t operator()(
+    std::size_t operator()(
         const std::shared_ptr<Field>& field) const noexcept {
         return field->hash();
     }
@@ -34,7 +34,7 @@ struct std::hash<std::shared_ptr<Field>> {
 
 template <>
 struct std::equal_to<std::shared_ptr<Field>> {
-    constexpr bool operator()(
+    bool operator()(
         const std::shared_ptr<Field>& field,
         const std::shared_ptr<Field>& other) const noexcept {
         return field->operator==(other);

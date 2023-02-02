@@ -1,7 +1,9 @@
 #include "src/storage/HeapPageIterator.hpp"
+#include <iostream>
+#include <cassert>
 
-HeapPageIterator::HeapPageIterator(HeapPage* page)
-    : page_(page), it_index_(0) {}
+HeapPageIterator::HeapPageIterator(std::shared_ptr<HeapPage> page)
+    : page_(std::move(page)), it_index_(0) {}
 
 bool HeapPageIterator::has_next() {
     for (int i = it_index_; i < page_->get_num_tuples(); ++i) {
@@ -9,7 +11,6 @@ bool HeapPageIterator::has_next() {
             return true;
         }
     }
-
     return false;
 }
 

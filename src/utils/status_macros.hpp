@@ -14,8 +14,8 @@
 #ifndef OR_TOOLS_BASE_STATUS_MACROS_H_
 #define OR_TOOLS_BASE_STATUS_MACROS_H_
 
-#include <absl/status/status.h>
-#include <absl/status/statusor.h>
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
 
 #include "src/utils/status_builder.hpp"
 

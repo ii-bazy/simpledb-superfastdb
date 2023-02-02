@@ -1,12 +1,14 @@
 #pragma once
 
+#include <memory>
+
 #include "src/storage/HeapPage.hpp"
 #include "src/storage/PageIterator.hpp"
 
 class HeapPage;
 class HeapPageIterator : public PageIterator {
    public:
-    HeapPageIterator(HeapPage* page);
+    HeapPageIterator(std::shared_ptr<HeapPage> page);
 
     bool has_next() override;
 
@@ -15,6 +17,6 @@ class HeapPageIterator : public PageIterator {
     void rewind() override { it_index_ = 0; }
 
    private:
-    HeapPage* page_;
+    std::shared_ptr<HeapPage> page_;
     int it_index_;
 };

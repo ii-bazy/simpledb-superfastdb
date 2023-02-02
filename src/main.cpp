@@ -140,6 +140,9 @@ int main(int argc, char** argv) {
     gflags::ParseCommandLineFlags(&argc, &argv, true);
     google::InitGoogleLogging(argv[0]);
 
+    // freopen( "out", "w", stdout);
+    // freopen( "out", "w", stderr);
+
     if (FLAGS_convert.size() > 0u) {
         std::vector<const Type*> types;
         const auto tokens = split_line(FLAGS_types);
@@ -163,7 +166,7 @@ int main(int argc, char** argv) {
 
     // TODO: NIE DA SIE SELECT age, count(*) FROM table3 WHERE country = 'Italy' GROUP BY age
     // bo index_for_field_name throwuje dla * tak powinno byc ?????
-    const auto query = "SELECT * FROM table3,table1 WHERE table3.age < table1.col1";
+    const auto query = "SELECT * FROM table3, table1 WHERE table3.age < table1.col1";
 
     // const auto query = "SELECT * FROM table3 WHERE table3.country = 'Italy'";
     
@@ -171,23 +174,23 @@ int main(int argc, char** argv) {
     auto lp = parser->ParseQuery(query).value(); // I'm ok with crash.
     
 
-    lp.Dump();
+    // lp.Dump();
 
-    // exit(1);
+    // // exit(1);
 
     auto it = lp.PhysicalPlan(TransactionId());
     std::cout << it->get_tuple_desc()->to_string() << "\n";
-    for (int i = 0; i < it->get_tuple_desc()->num_fields(); ++i) {
-        std::cerr << "Field: " << i << "\tname: " << it->get_tuple_desc()->get_field_name(i) << std::endl;
-    }
-    // for (int i = 0; i < 10; ++i) {
+    // for (int i = 0; i < it->get_tuple_desc()->num_fields(); ++i) {
+    //     std::cerr << "Field: " << i << "\tname: " << it->get_tuple_desc()->get_field_name(i) << std::endl;
+    // }
+    // // for (int i = 0; i < 10; ++i) {
     for (auto itt : *it) {
         std::cerr << itt->to_string() << "\n";
     }
     
 
-    // lt.PhysicalPlan(TransactionId());
-    
+    // // lt.PhysicalPlan(TransactionId());
+    // std::cerr <<"AAAAAAAAAAAAAAA\n";
 
     return 0;
     while (true) {
@@ -238,15 +241,20 @@ int main(int argc, char** argv) {
             //         tid, Database::get_catalog().get_table_id(table_name),
             //         ""));
 
-            auto seq_scan = SeqScan(
-                tid, Database::get_catalog().get_table_id(table_name), "");
+            auto seq_scan = Join(
+                JoinPredicate(0, OpType::LESS_THAN_OR_EQ, 0),
+                std::make_unique<SeqScan>(tid, Database::get_catalog().get_table_id(table_name), ""),
+                std::make_unique<SeqScan>(tid, Database::get_catalog().get_table_id(table_name), "")
+            );
+                // SeqScan(
+                // tid, Database::get_catalog().get_table_id(table_name), "");
 
             std::cout << seq_scan.get_tuple_desc()->to_string() << "\n";
-            for (int i = 0; i < 10; ++i) {
-                for (auto it : seq_scan) {
-                    // std::cerr << it->to_string() << "\n";
-                }
+            // for (int i = 0; i < 10; ++i) {
+            for (auto it : seq_scan) {
+                std::cerr << it->to_string() << "\n";
             }
+            // }
         } catch (const std::exception& e) {
             std::cerr << "Error:" << e.what() << "\n";
         }
@@ -258,6 +266,4 @@ int main(int argc, char** argv) {
 // bazel test //tests:TupleTest
 // bazel build //src:main
 // bazel run //src:main
-//  bazel run //src:main --
-//  --convert=/home/domiko/Documents/UWR/simpledb-superfastdb/data/table1.txt
-//  --types="int,int" --logtostderr=1
+//  bazel run //src:main -- --convert=/home/domiko/Documents/UWR/simpledb-superfastdb/data/table4.txt --types="string,int,string,string" --logtostderr=1

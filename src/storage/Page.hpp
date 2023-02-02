@@ -22,6 +22,7 @@ class Page {
     static std::vector<char> create_empty_page_data();
     virtual std::unique_ptr<PageIterator> iterator() = 0;
     virtual ~Page() = default;
-    protected:
-        bool is_dirty_ = false;
+
+   protected:
+    bool is_dirty_ = false;
 };

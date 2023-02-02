@@ -11,6 +11,7 @@
 #include "src/execution/SeqScan.hpp"
 #include "src/execution/Aggregate.hpp"
 #include "src/execution/Project.hpp"
+#include "src/execution/Join.hpp"
 #include "src/execution/Filter.hpp"
 
 absl::Status LogicalPlan::CheckColumnRef(ColumnRef ref) {
@@ -228,7 +229,7 @@ std::unique_ptr<OpIterator> LogicalPlan::PhysicalPlan(TransactionId tid) {
     // JoinOptimizer jo = new JoinOptimizer(this, joins);
     // joins = jo.orderJoins(statsMap, filterSelectivities, explain);
     
-    for (const auto& join_node : joins) {
+    for (const JoinNode& join_node : joins) {
         std::unique_ptr<OpIterator> plan_1 = nullptr;
         std::unique_ptr<OpIterator> plan_2 = nullptr;
         bool is_subquery_join = join_node.subplan != nullptr;
@@ -276,7 +277,15 @@ std::unique_ptr<OpIterator> LogicalPlan::PhysicalPlan(TransactionId tid) {
         if (plan_2 == nullptr) { throw std::invalid_argument("Unknow table in WHERE clause plan_1"); }
         
         // TODO: TU WAZNE ZEBY JOINY DZIALALY XD
-        // std::unique_ptr<OpIterator> j = nullptr;
+        std::unique_ptr<OpIterator> j = std::make_unique<Join>(
+            JoinPredicate(
+                plan_1->get_tuple_desc()->index_for_field_name(join_node.lref.column),
+                join_node.op,
+                plan_2->get_tuple_desc()->index_for_field_name(join_node.rref.column)
+            ),
+            std::move(plan_1),
+            std::move(plan_2)
+        );
 
         // j = JoinOptimizer.instantiateJoin(lj, plan1, plan2);
 

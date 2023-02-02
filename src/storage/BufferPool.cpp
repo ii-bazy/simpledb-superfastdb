@@ -26,7 +26,9 @@ std::shared_ptr<Page> BufferPool::get_page(const TransactionId* tid,
         if (recently_used_it_ == pages_.end()) {
             throw std::logic_error("Page limit equal to 0?");
         }
-        LOG(WARNING) << "Removing " << recently_used_it_->second->get_id();
+        LOG(WARNING) << "Removing " << recently_used_it_->first.first << " "
+                     << recently_used_it_->first.second;
+        recently_used_it_->second = nullptr;
         pages_.erase(recently_used_it_);
     }
 

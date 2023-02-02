@@ -2,6 +2,7 @@
 
 #include <sstream>
 #include <vector>
+#include <memory>
 
 #include "src/common/Database.hpp"
 #include "src/storage/HeapPageId.hpp"
@@ -9,7 +10,7 @@
 #include "src/storage/RecordId.hpp"
 #include "src/storage/Tuple.hpp"
 
-class HeapPage : public Page {
+class HeapPage : public Page, public std::enable_shared_from_this<HeapPage>  {
    public:
     HeapPage(std::shared_ptr<PageId> id, const std::vector<char>& data);
 

@@ -10,7 +10,7 @@ bool HeapFileIterator::has_next(TransactionId tid) {
         }
 
         it_page_index_ += 1;
-        LOG(INFO) << "Jumping to next page: " << it_page_index_;
+        LOG(INFO) << "Jumping to next page: " << it_page_index_ << "\tAll pages: " << file_->num_pages();
 
         if (it_page_index_ >= file_->num_pages()) {
             LOG(INFO) << "Next page doesn't exist!";

@@ -1,6 +1,6 @@
 #include "src/common/Catalog.hpp"
 
-#include <absl/strings/str_cat.h>
+#include "absl/strings/str_cat.h"
 #include <glog/logging.h>
 
 Catalog::Catalog() {}
@@ -36,6 +36,9 @@ const std::shared_ptr<TupleDesc>& Catalog::get_tuple_desc(int table_id) const {
     if (it == db_files_.end()) {
         throw std::invalid_argument("Unknown table id");
     }
+
+    LOG(INFO) << it->second->get_tuple_desc()->to_string();
+
     return it->second->get_tuple_desc();
 }
 
@@ -50,18 +53,12 @@ std::shared_ptr<DbFile> Catalog::get_db_file(int table_id) const {
 }
 
 void Catalog::load_schema(std::string catalog_file) {
-    const auto directory =
-        std::filesystem::path{catalog_file}.parent_path().string();
-    
-    // std::cerr << "catalog_file: " << catalog_file << " : " << directory << "\n";
-    // for (const auto & entry : std::filesystem::directory_iterator(directory))
-    //     std::cerr << "EEEEEEEEEEEEE\t" << entry.path() << std::endl;
-
-
     std::fstream file(catalog_file);
     if (!file.is_open()) {
         throw std::invalid_argument("Catalog file not found.");
     }
+    const auto directory =
+        std::filesystem::path{catalog_file}.parent_path().string();
 
     std::string line;
     while (std::getline(file, line)) {
@@ -86,15 +83,15 @@ void Catalog::load_schema(std::string catalog_file) {
         std::cerr << "\n";
 
         const std::string file_name = directory + "/" + table_name + ".dat";
-        std::fstream temp_file(file_name, std::ios::binary | std::ios::in);
+        std::fstream file(file_name, std::ios::binary | std::ios::in);
 
-        if (not temp_file.is_open()) {
+        if (not file.is_open()) {
             throw std::invalid_argument("Could not open file: " + file_name);
         }
 
         auto td = std::make_shared<TupleDesc>(types, names);
         std::shared_ptr<HeapFile> tab = std::make_shared<HeapFile>(
-            std::move(temp_file), std::move(td), std::move(file_name));
+            std::move(file), std::move(td), std::move(file_name));
         add_table(std::move(tab), table_name);
     }
 }
