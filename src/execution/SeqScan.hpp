@@ -1,7 +1,7 @@
 #pragma once
 
 #include <string>
-#include "absl/strings/str_cat.h"#include <absl/strings/str_cat.h>
+#include "absl/strings/str_cat.h"
 #include <glog/logging.h>
 
 #include "src/common/Database.hpp"

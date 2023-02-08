@@ -24,6 +24,10 @@ class TableStats {
      * @param ioCostPerPage The cost per page of IO. This doesn't differentiate
      * between sequential-scan IO and disk seeks.
      */
+    TableStats() {
+        throw std::invalid_argument("TableStats default constructor.");
+    }
+
     TableStats(int table_id, int io_cost_per_page)
         : table_id_(table_id), io_cost_per_page_(io_cost_per_page) {
         // For this function, you'll have to get the
@@ -68,7 +72,7 @@ class TableStats {
      * @return The estimated cardinality of the scan with the specified
      *         selectivityFactor
      */
-    int estimate_table_cardinality(double selectivity_factor) {
+    int estimate_table_cardinality(double selectivity_factor) const {
         return selectivity_factor * total_tuples_;
     }
 
@@ -82,8 +86,7 @@ class TableStats {
      * return the expected selectivity. You may estimate this value from the
      * histograms.
      */
-    double avg_selectivity(int field, OpType op) {
-        // TODO: OP?????
+    double avg_selectivity(int field, OpType op) const {
         if (int_histograms_[field] != nullptr) {
             return int_histograms_[field]->avg_selectivity(op);
         }
@@ -103,7 +106,7 @@ class TableStats {
      * @return The estimated selectivity (fraction of tuples that satisfy) the
      *         predicate
      */
-    double estimate_selectivity(int field, OpType op, const Field* constant) {
+    double estimate_selectivity(int field, OpType op, const Field* constant) const {
         if (constant->get_type() == Type::INT_TYPE()) {
             return int_histograms_[field]->estimate_selectivity(
                 op, dynamic_cast<const IntField*>(constant)->get_value());
@@ -129,6 +132,7 @@ class TableStats {
         max_field.resize(td->num_fields());
         int_histograms_.resize(td->num_fields());
         string_histograms_.resize(td->num_fields());
+        values_.resize(td->num_fields()); // TODO: wywal
 
         TransactionId tid;
         it->rewind(tid);
@@ -136,6 +140,7 @@ class TableStats {
         while (it->has_next(tid)) {
             total_tuples_ += 1;
             auto tuple = it->next();
+            // LOG(INFO) << tuple->to_string();
             for (int idx = 0; idx < td->num_fields(); ++idx) {
                 if (auto field = std::dynamic_pointer_cast<IntField>(
                         tuple->get_field(idx));
@@ -154,6 +159,7 @@ class TableStats {
         it->rewind(tid);
         while (it->has_next(tid)) {
             auto tuple = it->next();
+            // LOG(INFO) << tuple->to_string();
             for (int idx = 0; idx < td->num_fields(); ++idx) {
                 auto field = tuple->get_field(idx);
                 if (field->get_type() == Type::INT_TYPE()) {
@@ -162,6 +168,9 @@ class TableStats {
                             kNumHistBins, min_field[idx], max_field[idx]);
                     }
                     int_histograms_[idx]->add_value(
+                        std::dynamic_pointer_cast<IntField>(field)
+                            ->get_value());
+                    values_[idx].push_back(
                         std::dynamic_pointer_cast<IntField>(field)
                             ->get_value());
                 } else if (field->get_type() == Type::STRING_TYPE()) {
@@ -175,12 +184,29 @@ class TableStats {
                 }
             }
         }
+
+        // for (int idx = 0; idx < td->num_fields(); ++idx) {
+        //     if (td->get_field_name(idx) != "age") {
+        //         continue;
+        //     }
+
+        //     auto& v = values_[idx];
+        //     std::sort(v.begin(), v.end());
+
+        //     for (auto i : v) {
+        //         std::cerr << i << " ";
+        //     }
+        //     std::cerr << "\n";
+
+        //     exit(0);
+        // }
     }
 
     const int kNumHistBins = 100;
     int table_id_;
     int io_cost_per_page_;
     int total_tuples_;
+    std::vector<std::vector<int>> values_; // TODO: wywal
     std::vector<std::unique_ptr<IntHistogram>> int_histograms_;
     std::vector<std::unique_ptr<StringHistogram>> string_histograms_;
     std::vector<int> min_field;

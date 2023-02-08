@@ -2,30 +2,21 @@
 
 #include <map>
 #include <set>
+
+#include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "src/execution/logical_plan/logical_plan.hpp"
 
 class PlanCache {
-public:
-    void addPlan(std::set<JoinNode>& s, double cost, int card, std::vector<JoinNode>& order) {
-        best_orders_[s] = order;
-        bestCosts_[s] = cost;
-        bestCardinalities_[s] = card;
+   public:
+    PlanCache(uint64_t max_size) { best_cost_cards_.resize(max_size); }
+
+    void addPlan(uint64_t s, CostCard card) {
+        best_cost_cards_[s] = std::move(card);
     }
 
-    std::vector<JoinNode> getOrder(std::set<JoinNode>& s) {
-        return best_orders_[s];
-    }
+    CostCard& getCostCard(uint64_t s) { return best_cost_cards_[s]; }
 
-    double getCost(std::set<JoinNode> s) {
-        return bestCosts_[s];
-    }
-
-    int getCard(std::set<JoinNode>& s) {
-        return bestCardinalities_[s];
-    }
-
-private:
-    std::map<std::set<JoinNode>, std::vector<JoinNode>> best_orders_;
-    std::map<std::set<JoinNode>, double> bestCosts_;
-    std::map<std::set<JoinNode>, int> bestCardinalities_;
+   private:
+    std::vector<CostCard> best_cost_cards_;
 };

@@ -166,7 +166,10 @@ int main(int argc, char** argv) {
 
     // TODO: NIE DA SIE SELECT age, count(*) FROM table3 WHERE country = 'Italy' GROUP BY age
     // bo index_for_field_name throwuje dla * tak powinno byc ?????
-    const auto query = "SELECT * FROM table3, table1 WHERE table3.age < table1.col1";
+
+    // const auto query = "SELECT * FROM table3, table3 t3 WHERE t3.age = 4 AND table3.age >= t3.age";
+    const auto query = "SELECT * FROM table3, table1, table3 t3 WHERE t3.age <= table3.age AND table3.age < table1.col1 AND t3.age = 4";
+    // const auto query = "SELECT * FROM table3, table1, table3 t3, table4 t4, table5 t5 WHERE table3.age < table1.col1 and t3.age <= table3.age AND t3.age < 4 AND t4.age >= 2 AND t5.country = Ukraine";
 
     // const auto query = "SELECT * FROM table3 WHERE table3.country = 'Italy'";
     
@@ -183,16 +186,19 @@ int main(int argc, char** argv) {
     // for (int i = 0; i < it->get_tuple_desc()->num_fields(); ++i) {
     //     std::cerr << "Field: " << i << "\tname: " << it->get_tuple_desc()->get_field_name(i) << std::endl;
     // }
-    // // for (int i = 0; i < 10; ++i) {
-    for (auto itt : *it) {
-        std::cerr << itt->to_string() << "\n";
+    for (int i = 0; i < 1; ++i) {
+        int total_size = 0;
+        for (auto itt : *it) {
+            // std::cerr << itt->to_string() << "\n";
+            total_size += itt->to_string().size();
+        }
+        std::cerr << "Total size: " << total_size << "\n";
     }
-    
-
     // // lt.PhysicalPlan(TransactionId());
     // std::cerr <<"AAAAAAAAAAAAAAA\n";
 
     return 0;
+
     while (true) {
         std::string table_name;
         std::cout << "Table name to seq_scan:";
@@ -251,9 +257,12 @@ int main(int argc, char** argv) {
 
             std::cout << seq_scan.get_tuple_desc()->to_string() << "\n";
             // for (int i = 0; i < 10; ++i) {
+            int total_size = 0;
             for (auto it : seq_scan) {
-                std::cerr << it->to_string() << "\n";
+                // std::cerr << it->to_string() << "\n";
+                total_size += it->to_string().size();
             }
+            std::cerr << "Total size: " << total_size << "\n";
             // }
         } catch (const std::exception& e) {
             std::cerr << "Error:" << e.what() << "\n";
@@ -262,6 +271,22 @@ int main(int argc, char** argv) {
 
     return 0;
 }
+
+// Benchmark 1: bazel run --config=opt //src:main
+// Time (mean ± σ):      1.282 s ±  0.004 s    [User: 0.941 s, System: 0.311 s]
+// Range (min … max):    1.277 s …  1.288 s    10 runs
+
+// Benchmark 1: ./bazel-bin/src/main-opt
+//   Time (mean ± σ):      1.005 s ±  0.015 s    [User: 0.730 s, System: 0.274 s]
+//   Range (min … max):    0.990 s …  1.035 s    10 runs
+ 
+// Benchmark 2: ./bazel-bin/src/main
+//   Time (mean ± σ):      1.241 s ±  0.009 s    [User: 0.943 s, System: 0.298 s]
+//   Range (min … max):    1.229 s …  1.260 s    10 runs
+ 
+// Summary
+//   './bazel-bin/src/main-opt' ran
+//     1.23 ± 0.02 times faster than './bazel-bin/src/main'
 
 // bazel test //tests:TupleTest
 // bazel build //src:main

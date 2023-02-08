@@ -29,6 +29,8 @@ class Operator : public OpIterator {
 
     virtual std::shared_ptr<Tuple> fetch_next() = 0;
 
+    virtual ~Operator() = default;
+
    protected:
     std::shared_ptr<Tuple> next_tuple_ = nullptr;
 };

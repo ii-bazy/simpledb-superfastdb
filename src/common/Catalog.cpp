@@ -8,8 +8,8 @@ Catalog::Catalog() {}
 void Catalog::add_table(std::shared_ptr<DbFile> file, std::string name,
                         std::string pkey_field) {
     const auto file_id = file->get_id();
-    LOG(INFO) << absl::StrCat("Adding new table(id, name, pkey): ", "(",
-                              file_id, ",", name, ",", pkey_field, ")");
+    // LOG(INFO) << absl::StrCat("Adding new table(id, name, pkey): ", "(",
+    //                           file_id, ",", name, ",", pkey_field, ")");
 
     db_files_[file_id] = std::move(file);
     name_to_id_[name] = file_id;
@@ -31,21 +31,30 @@ std::string Catalog::get_table_name(const int id) const {
 }
 
 const std::shared_ptr<TupleDesc>& Catalog::get_tuple_desc(int table_id) const {
-    LOG(INFO) << "Get tuple desc: " << db_files_.size();
+    // LOG(INFO) << "Get tuple desc: " << db_files_.size();
     auto it = db_files_.find(table_id);
     if (it == db_files_.end()) {
         throw std::invalid_argument("Unknown table id");
     }
 
-    LOG(INFO) << it->second->get_tuple_desc()->to_string();
+    // LOG(INFO) << it->second->get_tuple_desc()->to_string();
 
     return it->second->get_tuple_desc();
 }
 
 std::shared_ptr<DbFile> Catalog::get_db_file(int table_id) const {
-    LOG(INFO) << "Db files size\t" << db_files_.size() << "\n";
+    // LOG(INFO) << "Db files size\t" << db_files_.size() << "\n";
     auto it = db_files_.find(table_id);
     if (it == db_files_.end()) {
+        throw std::invalid_argument("No table with id: ");
+        return nullptr;
+    }
+    return it->second;
+}
+
+std::string  Catalog::get_primary_key(int table_id) const {
+    auto it = primary_keys_.find(table_id);
+    if (it == primary_keys_.end()) {
         throw std::invalid_argument("No table with id: ");
         return nullptr;
     }

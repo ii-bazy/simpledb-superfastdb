@@ -16,7 +16,7 @@ void StringField::serialize(std::ostream& os) {
     os.write(reinterpret_cast<const char*>(&value_), sizeof(value_));
 }
 
-const Type* StringField::get_type() const { return Type::INT_TYPE(); }
+const Type* StringField::get_type() const { return Type::STRING_TYPE(); }
 
 std::string StringField::to_string() const { return value_; }
 

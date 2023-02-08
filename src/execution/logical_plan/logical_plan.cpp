@@ -13,6 +13,8 @@
 #include "src/execution/Project.hpp"
 #include "src/execution/Join.hpp"
 #include "src/execution/Filter.hpp"
+#include "src/optimizer/JoinOptimizer.hpp"
+
 
 absl::Status LogicalPlan::CheckColumnRef(ColumnRef ref) {
     if (ref.IsStar()) return absl::OkStatus();
@@ -186,7 +188,7 @@ std::unique_ptr<OpIterator> LogicalPlan::PhysicalPlan(TransactionId tid) {
     
     absl::flat_hash_map<std::string, std::string> equiv_map;
     absl::flat_hash_map<std::string, float> filter_selectivities;
-    // absl::flat_hash_map<std::string, TABLE STATS> stats_map;
+    absl::flat_hash_map<std::string, TableStats> stats_map;
 
     for (const auto& scan_node : scans) {
         auto ss = std::make_unique<SeqScan>(
@@ -200,9 +202,10 @@ std::unique_ptr<OpIterator> LogicalPlan::PhysicalPlan(TransactionId tid) {
         std::string base_table_name = Database::get_catalog()
             .get_table_name(scan_node.id);
 
-        // TODO: STATSY
-        // statsMap.put(baseTableName, baseTableStats.get(baseTableName));
-    //     filterSelectivities.put(table.alias, 1.0);
+            
+        stats_map.try_emplace(base_table_name, TableStats(get_table_id(base_table_name), 1));
+        std::cerr << "ALIAS NAME: " << scan_node.alias << "\n";
+        filter_selectivities[scan_node.alias] = 1.0;
     }
 
     std::cerr << "Phase 1 done" << std::endl;
@@ -223,11 +226,25 @@ std::unique_ptr<OpIterator> LogicalPlan::PhysicalPlan(TransactionId tid) {
         );
 
         sub_plan = std::move(filter);
+        // statsMap.get(Database.getCatalog().getTableName(this.getTableId(lf.tableAlias)));
+        const auto& stats = stats_map.at(Database::get_catalog().get_table_name(get_table_id(filter_node.lcol.table)));
+
+        std::cerr << "TABLE NAME: " << filter_node.lcol.table << "\n";
+        const int field_idx = td->index_for_field_name(filter_node.lcol.column);
+        const double selectivity = 
+            stats.estimate_selectivity(
+                field_idx,
+                filter_node.op,
+                filter_node.constant.get()
+        );
+        std::cerr << "_Selectivity: " << selectivity << "\n";
+
+        filter_selectivities.at(filter_node.lcol.table) *= selectivity;
     }
 
     std::cerr << "Phase 2 done" << std::endl;
-    // JoinOptimizer jo = new JoinOptimizer(this, joins);
-    // joins = jo.orderJoins(statsMap, filterSelectivities, explain);
+    JoinOptimizer jo = JoinOptimizer(this, joins);
+    joins = jo.orderJoins(stats_map, filter_selectivities, false);
     
     for (const JoinNode& join_node : joins) {
         std::unique_ptr<OpIterator> plan_1 = nullptr;
@@ -266,9 +283,9 @@ std::unique_ptr<OpIterator> LogicalPlan::PhysicalPlan(TransactionId tid) {
 
             if (plan_2 == nullptr) { throw std::invalid_argument("Plan 2 not working!!!"); }
         } else {
-            auto plan_ptr = subplan_map.find(t2_name);
-            plan_2 = std::move(plan_ptr->second);
-            subplan_map.erase(plan_ptr);
+            auto _plan_ptr = subplan_map.find(t2_name);
+            plan_2 = std::move(_plan_ptr->second);
+            subplan_map.erase(_plan_ptr);
         }
 
         std::cerr << "Phase 3.4 done" << std::endl;

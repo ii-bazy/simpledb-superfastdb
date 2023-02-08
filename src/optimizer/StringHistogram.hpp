@@ -6,7 +6,7 @@ class StringHistogram {
     StringHistogram(int buckets)
         : int_histogram_(buckets, min_val(), max_val()) {}
 
-    int string_to_int(std::string s) {
+    int string_to_int(std::string s) const {
         int v = 0;
         for (int i = 3; i >= 0; --i) {
             if (s.size() > 3 - i) {
@@ -27,21 +27,21 @@ class StringHistogram {
         return v;
     }
 
-    int max_val() { return string_to_int("zzzz"); }
+    int max_val() const { return string_to_int("zzzz"); }
 
-    int min_val() { return string_to_int(""); }
+    int min_val() const { return string_to_int(""); }
 
     void add_value(std::string s) {
         int val = string_to_int(s);
         int_histogram_.add_value(val);
     }
 
-    double estimate_selectivity(OpType op, std::string s) {
+    double estimate_selectivity(OpType op, std::string s) const {
         int val = string_to_int(s);
         return int_histogram_.estimate_selectivity(op, val);
     }
 
-    double avg_selectivity(OpType op) {
+    double avg_selectivity(OpType op) const {
         return int_histogram_.avg_selectivity(op);
     }
 

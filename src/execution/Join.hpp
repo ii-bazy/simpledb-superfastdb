@@ -21,18 +21,24 @@ class Join : public Operator {
                 return nullptr;
             }
             current_tuple_ = child1_->next();
+            child1_iters += 1;
         }
         while (true) {
             while (child2_->has_next()) {
                 // if predicate
                 auto nxt = child2_->next();
+                if (!child2_rewind) {
+                    child2_iters += 1;
+                }
                 if (predicate_.apply(current_tuple_.get(), nxt.get())) {
                     return join_tuples(current_tuple_, nxt);
                 }
             }
             child2_->rewind();
+            child2_rewind = true;
             if (child1_->has_next()) {
                 current_tuple_ = child1_->next();
+                child1_iters += 1;
             } else {
                 current_tuple_ = nullptr;
                 break;
@@ -47,6 +53,10 @@ class Join : public Operator {
     }
 
     std::shared_ptr<TupleDesc> get_tuple_desc() { return td_; }
+
+    ~Join() {
+        LOG(ERROR) << absl::StrCat("~Join(", child1_iters, ",", child2_iters, ")");
+    }
 
    private:
     std::shared_ptr<Tuple> join_tuples(std::shared_ptr<Tuple> t1,
@@ -68,4 +78,7 @@ class Join : public Operator {
     std::shared_ptr<TupleDesc> td_;
     // current tuple from child1
     std::shared_ptr<Tuple> current_tuple_;
+    int child1_iters = 0;
+    int child2_iters = 0;
+    bool child2_rewind = false;
 };

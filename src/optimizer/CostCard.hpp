@@ -5,7 +5,7 @@
 #include "src/execution/logical_plan/join_node.hpp"
 
 struct CostCard {
-    double cost;
-    double card;
+    double cost = 0.0;
+    double card = 0.0;
     std::vector<JoinNode> plan;
 };

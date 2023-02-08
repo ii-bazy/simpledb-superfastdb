@@ -20,7 +20,7 @@ class Filter : public Operator {
     void rewind() { child_->rewind(); }
 
     std::shared_ptr<Tuple> fetch_next() {
-        LOG(INFO) << "Filter fetch next!";
+        // LOG(INFO) << "Filter fetch next!";
         while (child_->has_next()) {
             auto next = child_->next();
             if (p_.apply(next.get())) {

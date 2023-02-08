@@ -12,7 +12,7 @@ HeapFile::HeapFile(std::fstream file, std::shared_ptr<TupleDesc> td,
     const auto current_offset = file_.tellg();
     file_.seekg(0, std::ios_base::end);
     num_pages_ = file_.tellg() / BufferPool::get_page_size();
-    LOG(INFO) << "NUM PAGES\t" << num_pages_;
+    // LOG(INFO) << "NUM PAGES\t" << num_pages_;
     file_.seekg(current_offset);
 }
 std::shared_ptr<Page> HeapFile::read_page(std::shared_ptr<PageId> pid) {
@@ -23,9 +23,9 @@ std::shared_ptr<Page> HeapFile::read_page(std::shared_ptr<PageId> pid) {
     const int page_size = BufferPool::get_page_size();
     const int page_offset = pid->get_page_number() * page_size;
 
-    LOG(INFO) << "PAGE NUM " << pid->get_page_number() << " PAGE ID "
-              << pid->get_table_id() << "\n";
-    LOG(INFO) << "PAGE SIZE " << page_size << " OFFSET " << page_offset << "\n";
+    // LOG(INFO) << "PAGE NUM " << pid->get_page_number() << " PAGE ID "
+            //   << pid->get_table_id() << "\n";
+    // LOG(INFO) << "PAGE SIZE " << page_size << " OFFSET " << page_offset << "\n";
 
     file_.seekg(page_offset);
 

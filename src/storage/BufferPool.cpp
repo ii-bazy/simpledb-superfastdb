@@ -10,29 +10,29 @@ BufferPool::BufferPool(int num_pages) : num_pages_(num_pages) {
 std::shared_ptr<Page> BufferPool::get_page(const TransactionId* tid,
                                            std::shared_ptr<PageId> pid,
                                            Permissions perm) {
-    LOG(INFO) << "Get page(table_id, page_number): (" << pid->get_table_id()
-              << "," << pid->get_page_number() << ")";
+    // LOG(INFO) << "Get page(table_id, page_number): (" << pid->get_table_id()
+    //           << "," << pid->get_page_number() << ")";
     auto it = pages_.find({pid->get_table_id(), pid->get_page_number()});
 
     if (it != pages_.end()) {
         recently_used_it_ = it;
-        LOG(INFO) << "Page found in buffer pool.";
-        LOG(WARNING) << "HIT";
+        // LOG(INFO) << "Page found in buffer pool.";
+        // LOG(WARNING) << "HIT";
         return it->second;
     }
 
-    LOG(WARNING) << "MISS";
+    // LOG(WARNING) << "MISS";
     if (static_cast<int>(pages_.size()) >= num_pages_) {
         if (recently_used_it_ == pages_.end()) {
             throw std::logic_error("Page limit equal to 0?");
         }
-        LOG(WARNING) << "Removing " << recently_used_it_->first.first << " "
-                     << recently_used_it_->first.second;
+        // LOG(WARNING) << "Removing " << recently_used_it_->first.first << " "
+        //              << recently_used_it_->first.second;
         recently_used_it_->second = nullptr;
         pages_.erase(recently_used_it_);
     }
 
-    LOG(INFO) << "Get db_file from catalog.";
+    // LOG(INFO) << "Get db_file from catalog.";
     auto db_file = Database::get_catalog().get_db_file(pid->get_table_id());
 
     if (db_file == nullptr) {

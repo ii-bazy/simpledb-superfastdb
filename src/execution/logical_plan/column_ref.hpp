@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include "absl/hash/hash.h"
 
 struct ColumnRef {
     // Table alias.
@@ -25,6 +26,11 @@ struct ColumnRef {
     
     bool operator!=(const ColumnRef& other) const {
         return table != other.table || column != other.column;
+    }
+
+    template <typename H>
+    friend H AbslHashValue(H h, const ColumnRef& ref) {
+        return H::combine(std::move(h), ref.table, ref.column);
     }
 };
 
