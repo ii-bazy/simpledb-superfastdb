@@ -54,8 +54,18 @@ class Join : public Operator {
 
     std::shared_ptr<TupleDesc> get_tuple_desc() { return td_; }
 
+    void explain(std::ostream& os, int indent) override {
+        os << absl::StrCat(std::string(indent, ' '),
+                           "-> Join : ", predicate_.to_string(), "\n");
+        os << std::string(indent + td_indent_, ' ')
+           << "TD: " << td_->to_string() << "\n";
+        child1_->explain(os, indent + child_indent_);
+        child2_->explain(os, indent + child_indent_);
+    }
+
     ~Join() {
-        LOG(ERROR) << absl::StrCat("~Join(", child1_iters, ",", child2_iters, ")");
+        LOG(ERROR) << absl::StrCat("~Join(", child1_iters, ",", child2_iters,
+                                   ")");
     }
 
    private:

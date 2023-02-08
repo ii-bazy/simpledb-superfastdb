@@ -102,6 +102,10 @@ class IntegerAggregator : public Aggregator {
 
     bool has_next() override { return idx_ < (int)tuples_.size(); }
 
+    void explain(std::ostream& os, int indent) override {
+        // TODO: explain
+    }
+
    private:
     const int gb_field_, acum_field_;
     const AggregatorOp op_;

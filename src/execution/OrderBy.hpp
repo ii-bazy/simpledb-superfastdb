@@ -44,6 +44,10 @@ class OrderBy : public OpIterator {
         return child_->get_tuple_desc();
     }
 
+    void explain(std::ostream& os, int indent) override {
+        // TODO: explain
+    }
+
    private:
     std::unique_ptr<OpIterator> child_;
     const Order order_;

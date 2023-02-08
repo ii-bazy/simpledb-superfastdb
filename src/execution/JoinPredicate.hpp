@@ -19,6 +19,11 @@ class JoinPredicate {
 
     OpType get_op_type() const { return op_; }
 
+    std::string to_string() const {
+        return absl::StrCat("col= ", field1_index_, " ", ::to_string(op_),
+                            " col= ", field2_index_);
+    }
+
    private:
     const int field1_index_;
     const OpType op_;

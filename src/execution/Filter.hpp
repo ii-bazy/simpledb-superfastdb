@@ -31,6 +31,12 @@ class Filter : public Operator {
         return nullptr;
     }
 
+    void explain(std::ostream& os, int indent) override {
+        os << std::string(indent, ' ') + "-> Filter with: " << p_.to_string()
+           << "\n";
+        child_->explain(os, indent + child_indent_);
+    }
+
    private:
     const Predicate p_;
     std::unique_ptr<OpIterator> child_;

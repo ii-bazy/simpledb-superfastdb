@@ -182,7 +182,9 @@ int main(int argc, char** argv) {
     // // exit(1);
 
     auto it = lp.PhysicalPlan(TransactionId());
-    std::cout << it->get_tuple_desc()->to_string() << "\n";
+    it->explain(std::cerr, 0);
+
+    // std::cout << it->get_tuple_desc()->to_string() << "\n";
     // for (int i = 0; i < it->get_tuple_desc()->num_fields(); ++i) {
     //     std::cerr << "Field: " << i << "\tname: " << it->get_tuple_desc()->get_field_name(i) << std::endl;
     // }

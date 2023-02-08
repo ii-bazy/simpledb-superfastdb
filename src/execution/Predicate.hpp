@@ -19,6 +19,11 @@ class Predicate {
         return t->get_field(field_index_)->compare(op_, operand_);
     }
 
+    std::string to_string() const {
+        return absl::StrCat("col= ", field_index_, " ", ::to_string(op_), " ",
+                            operand_->to_string());
+    }
+
    private:
     const int field_index_;
     const OpType op_;

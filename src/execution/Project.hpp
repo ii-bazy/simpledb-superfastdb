@@ -4,10 +4,9 @@
 
 class Project : public OpIterator {
    public:
-
-    Project(const std::vector<int> fields, const std::vector<const Type*> types, std::unique_ptr<OpIterator> child)
-        : child_{std::move(child)},
-          out_field_ids {fields} {
+    Project(const std::vector<int> fields, const std::vector<const Type*> types,
+            std::unique_ptr<OpIterator> child)
+        : child_{std::move(child)}, out_field_ids{fields} {
         std::vector<std::string> field_names;
         const auto child_td = child_->get_tuple_desc();
 
@@ -15,10 +14,7 @@ class Project : public OpIterator {
             field_names.push_back(child_td->get_field_name(field_id));
         }
 
-        td_ = std::make_shared<TupleDesc>(
-            types,
-            field_names
-        );
+        td_ = std::make_shared<TupleDesc>(types, field_names);
     }
 
     std::shared_ptr<Tuple> next() {
@@ -36,12 +32,19 @@ class Project : public OpIterator {
 
     void rewind() { child_->rewind(); }
 
-    bool has_next() {
-        return child_->has_next();
-    }
+    bool has_next() { return child_->has_next(); }
 
-    std::shared_ptr<TupleDesc> get_tuple_desc() {
-        return td_;
+    std::shared_ptr<TupleDesc> get_tuple_desc() { return td_; }
+
+    void explain(std::ostream& os, int indent) override {
+        os << std::string(indent, ' ') + "-> Project over fields: ";
+        for (const int idx : out_field_ids) {
+            os << idx << " ";
+        }
+        os << "\n";
+        os << std::string(indent + td_indent_, ' ')
+           << "TD: " << td_->to_string() << "\n";
+        child_->explain(os, indent + child_indent_);
     }
 
    private:

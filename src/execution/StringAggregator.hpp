@@ -52,6 +52,10 @@ class StringAggregator : public Aggregator {
         }
     }
 
+    void explain(std::ostream& os, int indent) override {
+        // TODO: explain
+    }
+
    private:
     void gen_tuples() {
         if (gb_field_ == NO_GROUPING) {

@@ -1,10 +1,10 @@
 #pragma once
 
-#include "absl/strings/str_cat.h"
 #include <glog/logging.h>
 
 #include <memory>
 
+#include "absl/strings/str_cat.h"
 #include "src/execution/Aggregator.hpp"
 #include "src/execution/AggregatorOp.hpp"
 #include "src/execution/IntegerAggregator.hpp"
@@ -73,6 +73,10 @@ class Aggregate : public OpIterator {
     bool has_next() override { return aggregator_->has_next(); }
 
     std::shared_ptr<TupleDesc> get_tuple_desc() override { return td_; }
+
+    void explain(std::ostream& os, int indent) override {
+        // TODO: explain
+    }
 
    private:
     std::unique_ptr<OpIterator> child_ = nullptr;

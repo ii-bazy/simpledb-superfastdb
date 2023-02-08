@@ -138,7 +138,7 @@ class JoinOptimizer {
         bool explain) {
 
         // FOR BENCHMARKS
-        // return joins_;
+        return joins_;
 
         // I20230208 22:28:31.817138 1091831 Join.hpp:58] ~Join(17380,103)
         // I20230208 22:28:31.817157 1091831 Join.hpp:58] ~Join(55,500)

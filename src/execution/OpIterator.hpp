@@ -13,6 +13,8 @@ class OpIterator {
     virtual bool has_next() = 0;
     virtual std::shared_ptr<TupleDesc> get_tuple_desc() = 0;
 
+    virtual void explain(std::ostream& os, int indent) = 0;
+
     struct Sentinel {};
 
     class Iterator {
@@ -38,4 +40,8 @@ class OpIterator {
     auto begin() { return Iterator(this); }
     auto end() { return Sentinel(); };
     virtual ~OpIterator() = default;
+
+   protected:
+    static constexpr int td_indent_ = 2;
+    static constexpr int child_indent_ = 4;
 };
