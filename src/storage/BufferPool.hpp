@@ -22,9 +22,14 @@ class BufferPool {
 
     BufferPool(int num_pages = c_default_pages);
 
-    std::shared_ptr<Page> get_page(TransactionId* tid,
+    std::shared_ptr<Page> get_page(const TransactionId* tid,
                                    std::shared_ptr<PageId> pid,
                                    Permissions perm);
+
+    void insert_tuple(TransactionId tid, int table_id,
+                      std::shared_ptr<Tuple> t);
+
+    void delete_tuple(TransactionId tid, std::shared_ptr<Tuple> t);
 
    private:
     constexpr static inline int c_default_pages = 50;
@@ -32,6 +37,7 @@ class BufferPool {
     static inline int page_size_ = c_default_page_size;
 
     std::map<std::pair<int, int>, std::shared_ptr<Page>> pages_;
+    decltype(pages_.begin()) recently_used_it_ = pages_.end();
     const int num_pages_;
     int page_count_;
 };

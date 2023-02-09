@@ -1,0 +1,2 @@
+first_table,name1,int,name2,string,name3,int
+second_table,name1,int,name2,string,name3,int,name4,string

@@ -1,2 +1,16 @@
-table1,col1,string,col2,int
+table1,col1,int,col2,int
 table2,col1,int,col2,int,col3,string,col4,string
+table3,name,string,age,int,country,string,city,string
+table4,name,string,age,int,country,string,city,string
+table_big,col1,string,col2,string
+first_table,name1,int,name2,string,name3,int
+second_table,name1,int,name2,string,name3,int
+T1,col1,int,col2,int,col3,int,col4,string
+T2,col1,int,col2,int
+A,a,int,b,int
+B,b,int,c,int
+C,a,int,d,int
+D,b,int,e,int
+E,a,int,f,int
+F,d,int,g,int
+G,h,int,j,int

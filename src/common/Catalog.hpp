@@ -7,6 +7,8 @@
 #include "src/storage/DbFile.hpp"
 #include "src/storage/HeapFile.hpp"
 #include "src/storage/TupleDesc.hpp"
+#include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 
 class Catalog {
    public:
@@ -25,14 +27,16 @@ class Catalog {
 
     std::shared_ptr<DbFile> get_db_file(int table_id) const;
 
+    std::string get_primary_key(int table_id) const;
+
     void load_schema(std::string catalog_file);
 
    private:
     std::vector<std::string> split_line(std::string line, char delimeter = ',');
 
-    std::unordered_map<int, std::shared_ptr<DbFile>> db_files_;
-    std::unordered_map<int, std::string> table_names_;
-    std::unordered_map<int, std::string> primary_keys_;
-    std::unordered_map<std::string, int> name_to_id_;
-    std::unordered_map<int, std::string> id_to_name_;
+    absl::flat_hash_map<int, std::shared_ptr<DbFile>> db_files_;
+    absl::flat_hash_map<int, std::string> table_names_;
+    absl::flat_hash_map<int, std::string> primary_keys_;
+    absl::flat_hash_map<std::string, int> name_to_id_;
+    absl::flat_hash_map<int, std::string> id_to_name_;
 };

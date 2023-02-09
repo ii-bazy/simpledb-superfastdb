@@ -1,23 +1,20 @@
 #include "src/common/Catalog.hpp"
 
+#include "absl/strings/str_cat.h"
 #include <glog/logging.h>
 
-Catalog::Catalog() {
-    // TODO(domiko):
-}
+Catalog::Catalog() {}
 
 void Catalog::add_table(std::shared_ptr<DbFile> file, std::string name,
                         std::string pkey_field) {
-    LOG(INFO) << "Adding table. with id: " << file->get_id()
-              << " and name: " << name;
-    db_files_.emplace(file->get_id(), file);
-    table_names_.emplace(file->get_id(), name);
-    primary_keys_.emplace(file->get_id(), pkey_field);
+    const auto file_id = file->get_id();
+    // LOG(INFO) << absl::StrCat("Adding new table(id, name, pkey): ", "(",
+    //                           file_id, ",", name, ",", pkey_field, ")");
 
-    if (name.size() > 0u) {
-        name_to_id_[name] = file->get_id();
-        id_to_name_[file->get_id()] = name;
-    }
+    db_files_[file_id] = std::move(file);
+    name_to_id_[name] = file_id;
+    id_to_name_[file_id] = name;
+    primary_keys_[file_id] = std::move(pkey_field);
 }
 
 void Catalog::add_table(std::shared_ptr<DbFile> file, std::string name) {
@@ -34,16 +31,19 @@ std::string Catalog::get_table_name(const int id) const {
 }
 
 const std::shared_ptr<TupleDesc>& Catalog::get_tuple_desc(int table_id) const {
-    LOG(INFO) << "Get tuple desc: " << db_files_.size();
+    // LOG(INFO) << "Get tuple desc: " << db_files_.size();
     auto it = db_files_.find(table_id);
     if (it == db_files_.end()) {
         throw std::invalid_argument("Unknown table id");
     }
+
+    // LOG(INFO) << it->second->get_tuple_desc()->to_string();
+
     return it->second->get_tuple_desc();
 }
 
 std::shared_ptr<DbFile> Catalog::get_db_file(int table_id) const {
-    LOG(INFO) << "Db files size\t" << db_files_.size() << "\n";
+    // LOG(INFO) << "Db files size\t" << db_files_.size() << "\n";
     auto it = db_files_.find(table_id);
     if (it == db_files_.end()) {
         throw std::invalid_argument("No table with id: ");
@@ -52,8 +52,17 @@ std::shared_ptr<DbFile> Catalog::get_db_file(int table_id) const {
     return it->second;
 }
 
+std::string  Catalog::get_primary_key(int table_id) const {
+    auto it = primary_keys_.find(table_id);
+    if (it == primary_keys_.end()) {
+        throw std::invalid_argument("No table with id: ");
+        return nullptr;
+    }
+    return it->second;
+}
+
 void Catalog::load_schema(std::string catalog_file) {
-    std::ifstream file(catalog_file);
+    std::fstream file(catalog_file);
     if (!file.is_open()) {
         throw std::invalid_argument("Catalog file not found.");
     }
@@ -66,7 +75,7 @@ void Catalog::load_schema(std::string catalog_file) {
         const auto table_name = tokens.at(0);
         std::vector<const Type*> types;
         std::vector<std::string> names;
-        std::cerr << "Loading schema :";
+        std::cerr << absl::StrCat("Loading schema(", table_name, ") :");
 
         for (int i = 1; i + 1 < static_cast<int>(tokens.size()); i += 2) {
             names.push_back(tokens[i]);
@@ -83,14 +92,14 @@ void Catalog::load_schema(std::string catalog_file) {
         std::cerr << "\n";
 
         const std::string file_name = directory + "/" + table_name + ".dat";
-        std::ifstream file(file_name, std::ios::binary | std::ios::in);
+        std::fstream file(file_name, std::ios::binary | std::ios::in);
 
         if (not file.is_open()) {
             throw std::invalid_argument("Could not open file: " + file_name);
         }
-        
+
         auto td = std::make_shared<TupleDesc>(types, names);
-        std::shared_ptr<DbFile> tab = std::make_shared<HeapFile>(
+        std::shared_ptr<HeapFile> tab = std::make_shared<HeapFile>(
             std::move(file), std::move(td), std::move(file_name));
         add_table(std::move(tab), table_name);
     }

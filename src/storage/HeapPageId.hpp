@@ -16,7 +16,7 @@ class HeapPageId : public PageId {
         return 0;
     }
 
-    virtual bool equals(const std::shared_ptr<PageId>& other) override {
+    virtual bool equals(const std::shared_ptr<PageId>& other) const override {
         if (dynamic_cast<HeapPageId*>(other.get()) == nullptr) {
             return false;
         }

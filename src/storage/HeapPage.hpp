@@ -2,6 +2,7 @@
 
 #include <sstream>
 #include <vector>
+#include <memory>
 
 #include "src/common/Database.hpp"
 #include "src/storage/HeapPageId.hpp"
@@ -9,15 +10,19 @@
 #include "src/storage/RecordId.hpp"
 #include "src/storage/Tuple.hpp"
 
-class HeapPage : public Page {
+class HeapPage : public Page, public std::enable_shared_from_this<HeapPage>  {
    public:
     HeapPage(std::shared_ptr<PageId> id, const std::vector<char>& data);
 
-    std::shared_ptr<PageId> get_id() const { return pid_; }
+    std::shared_ptr<PageId> get_id() const override { return pid_; }
 
-    static std::vector<char> create_empty_page_data();
+    bool is_dirty() const override { return is_dirty_; }
+    void set_dirty_state(TransactionId* tid [[maybe_unused]],
+                         bool state) override {
+        is_dirty_ = state;
+    }
 
-    int getNumUnusedSlots() const {
+    int get_num_unused_slots() const override {
         int unused = 0;
 
         for (const auto byte : header_) {
@@ -29,47 +34,47 @@ class HeapPage : public Page {
         return unused;
     }
 
-    virtual bool has_next() {
-        for (int i = it_index_; i < get_num_tuples(); ++i) {
-            if (is_slot_used(i)) {
-                return true;
+    virtual std::unique_ptr<PageIterator> iterator() override;
+
+    void insert_tuple(std::shared_ptr<Tuple> t) override {
+        // TODO: check desciptor mismatch? ??
+
+        set_dirty_state(nullptr, true);
+
+        for (int i = 0; i < get_num_tuples(); ++i) {
+            if (not is_slot_used(i)) {
+                tuples_[i] = t;
+                t->set_record_id(std::make_shared<RecordId>(pid_, i));
+                return;
             }
         }
 
-        return false;
+        throw std::invalid_argument("No free slot on this page");
     }
 
-    virtual std::shared_ptr<Tuple> next() override {
-        for (; it_index_ < get_num_tuples(); ++it_index_) {
-            if (is_slot_used(it_index_)) {
-                it_index_ += 1;
-                return tuples_[it_index_ - 1];
-            }
+    void delete_tuple(std::shared_ptr<Tuple> t) override {
+        set_dirty_state(nullptr, true);
+        const int slot_index = t->get_record_id()->get_tuple_number();
+
+        if (not t->get_record_id()->get_page_id()->equals(pid_)) {
+            throw std::invalid_argument(
+                "Trying to delete tuple from wrong page.");
         }
 
-        throw std::runtime_error("What?");
+        if (not is_slot_used(slot_index)) {
+            throw std::invalid_argument(
+                "Trying to delete tuple from empty slot.");
+        }
+
+        mark_slot_unused(slot_index);
+        tuples_[slot_index] = nullptr;
     }
-
-    virtual void rewind() override { it_index_ = 0; }
-
-    // TODO:
-    // /**
-    //  * @return an iterator over all tuples on this page (calling remove on
-    //  this iterator throws an UnsupportedOperationException)
-    //  *         (note that this iterator shouldn't return tuples in empty
-    //  slots!)
-    //  */
-    // public Iterator<Tuple> iterator() {
-    //     // TODO: some code goes here
-    //     return null;
-    // }
 
     // TODO:
     // public byte[] getPageData() {}
 
    private:
-    int it_index_ = 0;
-
+    friend class HeapPageIterator;
     std::shared_ptr<PageId> pid_;
     const std::shared_ptr<TupleDesc> td_;
 
@@ -80,9 +85,9 @@ class HeapPage : public Page {
     std::vector<char> old_data;
     // const char old_data_lock = 0;
 
-    int get_num_tuples();
+    int get_num_tuples() const;
 
-    int get_header_size() { return (get_num_tuples() + 7) / 8; }
+    int get_header_size() const { return (get_num_tuples() + 7) / 8; }
 
     std::shared_ptr<Tuple> read_next_tuple(std::istringstream& it,
                                            int slot_id) {
@@ -99,9 +104,15 @@ class HeapPage : public Page {
         return t;
     }
 
-    bool is_slot_used(int slot_id) {
+    bool is_slot_used(int slot_id) const {
         const int byte_index = slot_id / 8;
         const int bit_position = slot_id % 8;
         return header_[byte_index] & (1 << bit_position);
+    }
+
+    void mark_slot_unused(const int slot_id) {
+        const int byte_index = slot_id / 8;
+        const int bit_position = slot_id % 8;
+        header_[byte_index] &= ~(1 << bit_position);
     }
 };
