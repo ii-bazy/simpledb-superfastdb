@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include "src/flags.hpp"
 
 #include "src/execution/JoinPredicate.hpp"
 #include "src/execution/Operator.hpp"
@@ -75,7 +76,7 @@ class Join : public Operator {
     void explain(std::ostream& os, int indent) override {
         os << absl::StrCat(std::string(indent, ' '), "-> Join : ",
                            predicate_.to_string(*child1_->get_tuple_desc(),
-                                                *child1_->get_tuple_desc()),
+                                                *child2_->get_tuple_desc()),
                            "\n");
         os << std::string(indent + td_indent_, ' ')
            << "TD: " << td_->to_string() << "\n";
@@ -84,7 +85,7 @@ class Join : public Operator {
     }
 
     ~Join() {
-        LOG(ERROR) << absl::StrCat("~Join(", child1_iters, ",", child2_iters,
+        LOG(INFO) << absl::StrCat("~Join(", child1_iters, ",", child2_iters,
                                    ") ", child2_memory_.current_size, " ",
                                    child2_memory_.ready);
     }
@@ -103,11 +104,11 @@ class Join : public Operator {
     }
 
     struct Memory {
-        const uint64_t kMaxMemory = 32 * 1024 * 1024;
+        const uint64_t kMaxMemory = FLAGS_materialize_size * 1024 * 1024;
         std::vector<std::shared_ptr<Tuple>> tuples;
         uint64_t current_size = 0;
         // Flip to to false in order to never use Memory.
-        bool enable = true;
+        bool enable = FLAGS_use_materialize;
         bool ready = false;
         std::vector<std::shared_ptr<Tuple>>::iterator it;
 

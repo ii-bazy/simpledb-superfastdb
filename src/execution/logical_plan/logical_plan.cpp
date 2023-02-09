@@ -204,11 +204,11 @@ std::unique_ptr<OpIterator> LogicalPlan::PhysicalPlan(TransactionId tid) {
 
             
         stats_map.try_emplace(base_table_name, TableStats(get_table_id(base_table_name), 1));
-        std::cerr << "ALIAS NAME: " << scan_node.alias << "\n";
+        // std::cerr << "ALIAS NAME: " << scan_node.alias << "\n";
         filter_selectivities[scan_node.alias] = 1.0;
     }
 
-    std::cerr << "Phase 1 done" << std::endl;
+    // std::cerr << "Phase 1 done" << std::endl;
 
     for (const auto& filter_node : filters) {
         auto& sub_plan = subplan_map[filter_node.lcol.table];
@@ -229,7 +229,7 @@ std::unique_ptr<OpIterator> LogicalPlan::PhysicalPlan(TransactionId tid) {
         // statsMap.get(Database.getCatalog().getTableName(this.getTableId(lf.tableAlias)));
         const auto& stats = stats_map.at(Database::get_catalog().get_table_name(get_table_id(filter_node.lcol.table)));
 
-        std::cerr << "TABLE NAME: " << filter_node.lcol.table << "\n";
+        // std::cerr << "TABLE NAME: " << filter_node.lcol.table << "\n";
         const int field_idx = td->index_for_field_name(filter_node.lcol.column);
         const double selectivity = 
             stats.estimate_selectivity(
@@ -237,12 +237,12 @@ std::unique_ptr<OpIterator> LogicalPlan::PhysicalPlan(TransactionId tid) {
                 filter_node.op,
                 filter_node.constant.get()
         );
-        std::cerr << "_Selectivity: " << selectivity << "\n";
+        // std::cerr << "_Selectivity: " << selectivity << "\n";
 
         filter_selectivities.at(filter_node.lcol.table) *= selectivity;
     }
 
-    std::cerr << "Phase 2 done" << std::endl;
+    // std::cerr << "Phase 2 done" << std::endl;
     JoinOptimizer jo = JoinOptimizer(this, joins);
     joins = jo.orderJoins(stats_map, filter_selectivities, false);
     
@@ -258,7 +258,7 @@ std::unique_ptr<OpIterator> LogicalPlan::PhysicalPlan(TransactionId tid) {
             t1_name = join_node.lref.table;
         }
 
-        std::cerr << "Phase 3.1 done" << std::endl;
+        // std::cerr << "Phase 3.1 done" << std::endl;
 
         if (equiv_map.contains(join_node.rref.table)) {
             t2_name = equiv_map[join_node.rref.table];
@@ -266,17 +266,17 @@ std::unique_ptr<OpIterator> LogicalPlan::PhysicalPlan(TransactionId tid) {
             t2_name = join_node.rref.table;
         }
 
-        std::cerr << "Phase 3.2 done" << std::endl;
+        // std::cerr << "Phase 3.2 done" << std::endl;
 
         auto plan_ptr = subplan_map.find(t1_name);
 
         assert(plan_ptr != subplan_map.end());
-        std::cerr << "Phase 3.22 done" << std::endl;
+        // std::cerr << "Phase 3.22 done" << std::endl;
         plan_1 = std::move(plan_ptr->second);
-        std::cerr << "Phase 3.222 done" << std::endl;
+        // std::cerr << "Phase 3.222 done" << std::endl;
         subplan_map.erase(plan_ptr);
 
-        std::cerr << "Phase 3.3 done" << std::endl;
+        // std::cerr << "Phase 3.3 done" << std::endl;
 
         if (is_subquery_join) {
             plan_2 = join_node.subplan->PhysicalPlan(tid);
@@ -288,12 +288,11 @@ std::unique_ptr<OpIterator> LogicalPlan::PhysicalPlan(TransactionId tid) {
             subplan_map.erase(_plan_ptr);
         }
 
-        std::cerr << "Phase 3.4 done" << std::endl;
+        // std::cerr << "Phase 3.4 done" << std::endl;
 
         if (plan_1 == nullptr) { throw std::invalid_argument("Unknow table in WHERE clause plan_1"); }
         if (plan_2 == nullptr) { throw std::invalid_argument("Unknow table in WHERE clause plan_1"); }
         
-        // TODO: TU WAZNE ZEBY JOINY DZIALALY XD
         std::unique_ptr<OpIterator> j = std::make_unique<Join>(
             JoinPredicate(
                 plan_1->get_tuple_desc()->index_for_field_name(join_node.lref.column),
@@ -308,18 +307,18 @@ std::unique_ptr<OpIterator> LogicalPlan::PhysicalPlan(TransactionId tid) {
 
         subplan_map[t1_name] = std::move(j);
 
-        std::cerr << "Phase 3.5 done" << std::endl;
+        // std::cerr << "Phase 3.5 done" << std::endl;
 
         if (!is_subquery_join) {
 
-            std::cerr << "Phase 3.6 done" << std::endl;
+            // std::cerr << "Phase 3.6 done" << std::endl;
             auto t2_subplan_ptr = subplan_map.find(t2_name);
             if (t2_subplan_ptr != subplan_map.end()) {
                 subplan_map.erase(t2_subplan_ptr);
             }
-            std::cerr << "Phase 3.66 done" << std::endl;
+            // std::cerr << "Phase 3.66 done" << std::endl;
             equiv_map[t2_name] = t1_name;
-            std::cerr << "Phase 3.666 done" << std::endl;
+            // std::cerr << "Phase 3.666 done" << std::endl;
 
             for (auto& [key, value] : equiv_map) {
                 if (value == t2_name) {
@@ -327,11 +326,11 @@ std::unique_ptr<OpIterator> LogicalPlan::PhysicalPlan(TransactionId tid) {
                 }
             }
 
-            std::cerr << "Phase 3.6666 done" << std::endl;
+            // std::cerr << "Phase 3.6666 done" << std::endl;
         }
     }
 
-    std::cerr << "Phase 3 done" << std::endl;
+    // std::cerr << "Phase 3 done" << std::endl;
 
     if (subplan_map.size() > 1 || subplan_map.size() == 0) {
         throw std::invalid_argument("Query does not include join expressions joining all nodes!");
@@ -346,13 +345,13 @@ std::unique_ptr<OpIterator> LogicalPlan::PhysicalPlan(TransactionId tid) {
     std::vector<int> out_fields;
     std::vector<const Type*> out_types;
 
-    std::cerr << "Phase 4 done" << std::endl;
+    // std::cerr << "Phase 4 done" << std::endl;
 
-    std::cerr << "SELECT_NODE CNT\t" << selects.size() << "\n";
+    // std::cerr << "SELECT_NODE CNT\t" << selects.size() << "\n";
 
     if (!(has_agg || has_group))
     for (auto& select_node : selects) {
-        std::cerr << "REF COL\t" << select_node.ref.column << std::endl;
+        // std::cerr << "REF COL\t" << select_node.ref.column << std::endl;
 
         if (select_node.ref == agg_column) {
             throw 1;
@@ -397,10 +396,10 @@ std::unique_ptr<OpIterator> LogicalPlan::PhysicalPlan(TransactionId tid) {
 
             // out_types.push_back(td->get_field_type(id));
         } else if (select_node.ref.IsStar() || select_node.ref.column == "*") {
-            std::cerr << "STARRRRRRR" << std::endl;
-            std::cerr << node << std::endl;
+            // std::cerr << "STARRRRRRR" << std::endl;
+            // std::cerr << node << std::endl;
             const auto td = node->get_tuple_desc();
-            std::cerr << "STAR TD CNT\t" << td->num_fields() << std::endl;
+            // std::cerr << "STAR TD CNT\t" << td->num_fields() << std::endl;
             for (int i = 0; i < td->num_fields(); ++i) {
                 out_fields.push_back(i);
                 out_types.push_back(td->get_field_type(i));
@@ -420,13 +419,13 @@ std::unique_ptr<OpIterator> LogicalPlan::PhysicalPlan(TransactionId tid) {
         }
     }
 
-    std::cerr << "Phase 5 done" << std::endl;
+    // std::cerr << "Phase 5 done" << std::endl;
 
 
-    for (auto p: out_fields) std::cerr << "OUT_FIELDS: " << p << std::endl;
+    // for (auto p: out_fields) std::cerr << "OUT_FIELDS: " << p << std::endl;
 
-    std::cerr << "agg_column: " << agg_column.column << "\t" << agg_column.IsValid() << "\t" << agg_column.IsStar() << std::endl;
-    std::cerr << "Has_agg: " << has_agg << "\thas_order: " << has_order << "\thas_group: " << has_group << std::endl; 
+    // std::cerr << "agg_column: " << agg_column.column << "\t" << agg_column.IsValid() << "\t" << agg_column.IsStar() << std::endl;
+    // std::cerr << "Has_agg: " << has_agg << "\thas_order: " << has_order << "\thas_group: " << has_group << std::endl; 
 
     // throw std::invalid_argument("EEEEEEEEEEEEEEEEEE");
 
@@ -441,10 +440,10 @@ std::unique_ptr<OpIterator> LogicalPlan::PhysicalPlan(TransactionId tid) {
             agg_type
         );
 
-        std::cerr << "AGGR\t" << node->get_tuple_desc()->to_string() << "\n";
+        // std::cerr << "AGGR\t" << node->get_tuple_desc()->to_string() << "\n";
     }
 
-    std::cerr << "Phase 6 done" << std::endl;
+    // std::cerr << "Phase 6 done" << std::endl;
 
     if (has_order) {
         node = std::make_unique<OrderBy>(

@@ -7,3 +7,10 @@ first_table,name1,int,name2,string,name3,int
 second_table,name1,int,name2,string,name3,int
 T1,col1,int,col2,int,col3,int,col4,string
 T2,col1,int,col2,int
+A,a,int,b,int
+B,b,int,c,int
+C,a,int,d,int
+D,b,int,e,int
+E,a,int,f,int
+F,d,int,g,int
+G,h,int,j,int

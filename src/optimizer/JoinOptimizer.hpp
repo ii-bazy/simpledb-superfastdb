@@ -5,6 +5,7 @@
 #include "src/execution/Join.hpp"
 #include "src/execution/JoinPredicate.hpp"
 #include "src/execution/logical_plan/logical_plan.hpp"
+#include "src/flags.hpp"
 #include "src/optimizer/CostCard.hpp"
 #include "src/optimizer/PlanCache.hpp"
 #include "src/optimizer/TableStats.hpp"
@@ -92,7 +93,7 @@ class JoinOptimizer {
                 flip_op_type(joinOp));
 
             lcard = stats.at(t1_name).estimate_table_cardinality(selectivity);
-            LOG(ERROR) << absl::StrCat(
+            LOG(INFO) << absl::StrCat(
                 "Table: ", table1Alias, " Column: ", field1PureName,
                 " Selectivity ", selectivity, " Card: ", lcard,
                 " Op: ", to_string(flip_op_type(joinOp)));
@@ -111,7 +112,7 @@ class JoinOptimizer {
                       << "\tSelectivity: " << selectivity;
             rcard = stats.at(t2_name).estimate_table_cardinality(selectivity);
 
-            LOG(ERROR) << absl::StrCat(
+            LOG(INFO) << absl::StrCat(
                 "Table: ", table2Alias, " Column: ", field2PureName,
                 " Selectivity ", selectivity, " Card: ", lcard,
                 " Op: ", to_string(joinOp));
@@ -141,25 +142,17 @@ class JoinOptimizer {
         absl::flat_hash_map<std::string, TableStats>& stats,
         absl::flat_hash_map<std::string, float>& filterSelectivities,
         bool explain) {
-        // FOR BENCHMARKS
-        // return joins_;
+        if (!FLAGS_use_join_optimization) {
+            return joins_;
+        }
 
-        // I20230208 22:28:31.817138 1091831 Join.hpp:58] ~Join(17380,103)
-        // I20230208 22:28:31.817157 1091831 Join.hpp:58] ~Join(55,500)
-
-        // ZŁE
-        // I20230208 22:29:14.890336 1092882 Join.hpp:58] ~Join(55,47585)
-        // I20230208 22:29:14.890350 1092882 Join.hpp:58] ~Join(27500,103)
-
-        //
-
-        LOG(ERROR) << "Joins size: " << joins_.size();
+        LOG(INFO) << "Joins size: " << joins_.size();
         PlanCache pc((1ULL << joins_.size()));
 
         for (uint64_t mask = 0; mask < (1ULL << joins_.size()); ++mask) {
             CostCard best_cost_card;
 
-            LOG(ERROR) << "SOLVING MASK:" << mask;
+            LOG(INFO) << "SOLVING MASK:" << mask;
 
             for (uint64_t i = 0; i < joins_.size(); ++i) {
                 // for (int64_t i = (joins_.size() - 1); i >= 0; --i) {
@@ -167,8 +160,8 @@ class JoinOptimizer {
                     continue;
                 }
 
-                LOG(ERROR) << "Trying with " << i << " as lead!";
-                LOG(ERROR) << "Join node: " << std::string(joins_[i]);
+                LOG(INFO) << "Trying with " << i << " as lead!";
+                LOG(INFO) << "Join node: " << std::string(joins_[i]);
 
                 update_cost_and_card_of_subplan(stats, filterSelectivities,
                                                 joins_[i], mask ^ (1ULL << i),
@@ -257,11 +250,10 @@ class JoinOptimizer {
                 filter_selectivities[table2Alias]);
             rightPkey = isPkey(table2Alias, j.rref.column);
 
-            LOG(ERROR) << "SINGLE JOIN!";
-            LOG(ERROR) << absl::StrCat("Left cost: ", t1cost,
-                                       " card: ", t1card);
-            LOG(ERROR) << absl::StrCat("Right cost: ", t2cost,
-                                       " card: ", t2card);
+            LOG(INFO) << "SINGLE JOIN!";
+            LOG(INFO) << absl::StrCat("Left cost: ", t1cost, " card: ", t1card);
+            LOG(INFO) << absl::StrCat("Right cost: ", t2cost,
+                                      " card: ", t2card);
 
             // std::cerr << "LEFT: " << t1cost << " " << t1card << "\n";
             // std::cerr << "RIGHT: " << t2cost << " " << t2card << "\n";
@@ -269,8 +261,8 @@ class JoinOptimizer {
             // news is not empty -- figure best way to join j to news
             auto cc = pc.getCostCard(news);
 
-            LOG(ERROR) << absl::StrCat("Best subplan for news ", news,
-                                       " cost: ", cc.cost, " card: ", cc.card);
+            LOG(INFO) << absl::StrCat("Best subplan for news ", news,
+                                      " cost: ", cc.cost, " card: ", cc.card);
 
             prevBest = cc.plan;
 
@@ -285,7 +277,7 @@ class JoinOptimizer {
 
             // estimate cost of right subtree
             if (doesJoin(prevBest, table1Alias)) {  // j.t1 is in prevBest
-                LOG(ERROR) << "Does Join to table1Alias: " << table1Alias;
+                LOG(INFO) << "Does Join to table1Alias: " << table1Alias;
                 t1cost = prevBestCost;  // left side just has cost of whatever
                 // left
                 // subtree is
@@ -305,7 +297,7 @@ class JoinOptimizer {
 
             } else if (doesJoin(prevBest,
                                 table2Alias)) {  // j.t2 is in prevbest
-                LOG(ERROR) << "Does Join to table2Alias: " << table2Alias;
+                LOG(INFO) << "Does Join to table2Alias: " << table2Alias;
                 // (both shouldn't be)
                 t2cost = prevBestCost;  // left side just has cost of whatever
                 // left
@@ -319,16 +311,16 @@ class JoinOptimizer {
                 leftPkey = isPkey(j.lref.table, j.lref.column);
 
             } else {
-                LOG(ERROR) << "CROSS PRODUCT!";
+                LOG(INFO) << "CROSS PRODUCT!";
                 // don't consider this plan if one of j.t1 or j.t2
                 // isn't a table joined in prevBest (cross product)
                 return;
             }
 
-            LOG(ERROR) << absl::StrCat("left = (", t1cost, ",", t1card, ")",
-                                       leftPkey);
-            LOG(ERROR) << absl::StrCat("right = (", t2cost, ",", t2card, ")",
-                                       rightPkey);
+            LOG(INFO) << absl::StrCat("left = (", t1cost, ",", t1card, ")",
+                                      leftPkey);
+            LOG(INFO) << absl::StrCat("right = (", t2cost, ",", t2card, ")",
+                                      rightPkey);
         }
 
         // case where prevbest is left
@@ -337,19 +329,19 @@ class JoinOptimizer {
         JoinNode j2 = j.swapInnerOuter();
         double cost2 = estimate_join_cost(j2, t2card, t1card, t2cost, t1cost);
 
-        LOG(ERROR) << "Checking swap!";
+        LOG(INFO) << "Checking swap!";
 
-        LOG(ERROR) << "Order1 cost: " << cost1;
-        LOG(ERROR) << "Order2 cost: " << cost2;
+        LOG(INFO) << "Order1 cost: " << cost1;
+        LOG(INFO) << "Order2 cost: " << cost2;
 
         if (cost2 < cost1) {
-            LOG(ERROR) << "Swaping!";
+            LOG(INFO) << "Swaping!";
             j = j2;
             cost1 = cost2;
             std::swap(leftPkey, rightPkey);
         }
 
-        LOG(ERROR) << "J: " << std::string(j);
+        LOG(INFO) << "J: " << std::string(j);
 
         if (best_cost_card.plan.size() > 0u && cost1 >= best_cost_card.cost)
             return;
@@ -359,7 +351,7 @@ class JoinOptimizer {
         cc.card = estimate_join_cardinality(j, t1card, t2card, leftPkey,
                                             rightPkey, stats);
 
-        LOG(ERROR) << "cost: " << cost1 << " card: " << cc.card;
+        LOG(INFO) << "cost: " << cost1 << " card: " << cc.card;
         cc.cost = cost1;
         cc.plan = prevBest;
         cc.plan.push_back(j);  // prevbest is left -- add new join to end

@@ -14,6 +14,7 @@ build:opt --cxxopt -mtune=native
 build:opt --cxxopt -funroll-all-loops
 build:opt --cxxopt -finline-functions
 build:opt --cxxopt -fomit-frame-pointer
+build:opt --cxxopt -DNDEBUG
 
 # Address sanitizer config
 # Use with bazel run --config=asan or lsan

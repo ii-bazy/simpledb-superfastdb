@@ -1,5 +1,6 @@
 #include <gflags/gflags.h>
 #include <glog/logging.h>
+#include "src/flags.hpp"
 
 #include <iostream>
 #include <numeric>
@@ -21,9 +22,6 @@
 #include "src/storage/IntField.hpp"
 #include "src/storage/Tuple.hpp"
 #include "src/storage/TupleDesc.hpp"
-
-DEFINE_string(convert, "", "Path to file to convert to binary.");
-DEFINE_string(types, "", "Types of columns in table.");
 
 std::vector<std::string> split_line(std::string line, char delimeter = ',') {
     std::stringstream ss(line);
@@ -49,13 +47,6 @@ void convert(const std::string file_name, std::vector<const Type*> types) {
         tuples.push_back(split_line(line));
     }
 
-    // for (auto row : tuples) {
-    //     for (auto i : row) {
-    //         std::cerr << i << " ";
-    //     }
-    //     std::cerr << "\n";
-    // }
-
     auto binary_file =
         file_name.substr(0, file_name.find_last_of(".txt") - 3) + ".dat";
     std::cerr << binary_file << "\n";
@@ -64,7 +55,7 @@ void convert(const std::string file_name, std::vector<const Type*> types) {
     const int bytes_per_page = BufferPool::get_page_size();
     const int tuples_per_page =
         (BufferPool::get_page_size() * 8) / (tuple_size * 8 + 1);
-    // std::cerr << "Tuples per page: " << tuples_per_page << "\n";
+
     const int header_bytes = (tuples_per_page + 7) / 8;
     const int pages = (static_cast<int>(tuples.size()) + tuples_per_page - 1) /
                       tuples_per_page;
@@ -138,9 +129,6 @@ int main(int argc, char** argv) {
     gflags::ParseCommandLineFlags(&argc, &argv, true);
     google::InitGoogleLogging(argv[0]);
 
-    // freopen( "out", "w", stdout);
-    // freopen( "out", "w", stderr);
-
     if (FLAGS_convert.size() > 0u) {
         std::vector<const Type*> types;
         const auto tokens = split_line(FLAGS_types);
@@ -157,135 +145,94 @@ int main(int argc, char** argv) {
         return 0;
     }
 
-    Database::get_catalog().load_schema("data/schema.txt");
+    if (FLAGS_benchmark) {
+        std::vector<std::string> queries{
+            "SELECT count(age) FROM table3 WHERE country = 'Italy'",
+            "SELECT age, count(age) FROM table3 WHERE country = 'Italy' GROUP BY age",
+            "SELECT * FROM table3, table3 t3 WHERE t3.age = 4 AND table3.age >= t3.age",
+            "SELECT * FROM table3, table1, table3 t3 WHERE t3.age <= table3.age AND table3.age < table1.col1 AND t3.age = 4",
+            "SELECT * FROM table3 WHERE table3.country = 'Italy'",
+            "SELECT * FROM T2 WHERE T2.col1 <= 40 AND T2.col2 > 0",
+            "SELECT * FROM T1, T2 WHERE T1.col1 <= 10 AND T2.col2 >= T1.col2",
+            "SELECT * FROM T1, T2 t2, T2 WHERE T1.col1 <= 100 AND t2.col2 = T1.col2 AND T2.col2 >= T1.col2",
+            "SELECT * FROM A, B, C, D, E, F, G WHERE A.b = B.b AND A.a = C.a AND A.b < D.b AND C.a > E.a AND C.d = F.d AND A.a >= G.h AND G.j < 57",
+            "SELECT * FROM A, B, C, D, E, F, G WHERE C.d = F.d AND A.b = B.b AND A.a = C.a AND A.b < D.b AND C.a > E.a AND A.a >= G.h AND G.j < 57",
+        };
 
-    // const auto query = "SELECT count(age) FROM table3 WHERE country =
-    // 'Italy'";
+        Database::get_catalog().load_schema("data/schema.txt");
 
-    // TODO: NIE DA SIE SELECT age, count(*) FROM table3 WHERE country = 'Italy'
-    // GROUP BY age bo index_for_field_name throwuje dla * tak powinno byc ?????
+        std::unique_ptr<Parser> parser = std::make_unique<Parser>();
 
-    // const auto query =
-    //     "SELECT * FROM table3, table3 t3 WHERE t3.age = 4 AND table3.age >= "
-    //     "t3.age";
+        uint64_t total_time_ms = 0;
+        for (const auto& query : queries) {
+            try {
+                auto lp = parser->ParseQuery(query).value();  // I'm ok with crash.
+                auto it = lp.PhysicalPlan(TransactionId());
 
-    // const auto query =
-    //     "SELECT * FROM table3, table1, table3 t3 WHERE t3.age <= table3.age "
-    //     "AND table3.age < table1.col1 AND t3.age = 4 ";
+                if (FLAGS_explain) {
+                    it->explain(std::cout, 0);
+                }
 
-    // const auto
-    // query = "SELECT * FROM table3, table1, table3 t3, table4 t4, table5 t5
-    // WHERE table3.age < table1.col1 and t3.age <= table3.age AND t3.age < 4
-    // AND t4.age >= 2 AND t5.country = Ukraine";
+                auto start_time = std::chrono::steady_clock::now();
+                int total_tuples = 0;
+                for (auto itt : *it) {
+                    total_tuples += 1;
+                }
+                std::cout << "Number of tuples: " << total_tuples << "\t";
 
-    // const auto query = "SELECT * FROM table3 WHERE table3.country =
-    // 'Italy'";
+                auto end_time = std::chrono::steady_clock::now();
+                auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                                end_time - start_time)
+                                .count();
+                std::cout << "Query took " << ms << "ms\n";
+                total_time_ms += ms;
 
-    // const auto query = "SELECT * FROM T2 WHERE T2.col1 <= 40 AND T2.col2
-    // > 0";
-    // const auto query =
-    //     "SELECT * FROM T1, T2 WHERE T1.col1 <= 10 AND T2.col2 >= T1.col2";
-    const auto query =
-        "SELECT * FROM T1, T2 t2, T2 WHERE T1.col1 <= 1000 AND t2.col2 = "
-        "T1.col2 AND T2.col2 >= T1.col2";
+            } catch (const std::exception& e) {
+                std::cerr << "Benchmark error with query: " << query 
+                        << " : " << e.what() << "\n";
+            }
+        }
+
+        std::cout << "All queries took " << total_time_ms << "ms\n";
+
+        return 0;
+    }
+
+    if (FLAGS_schema_path.size() == 0) {
+        std::cerr << "schema_path is required!\n";
+        return 1;
+    }
+
+    Database::get_catalog().load_schema(FLAGS_schema_path);
 
     std::unique_ptr<Parser> parser = std::make_unique<Parser>();
-    auto lp = parser->ParseQuery(query).value();  // I'm ok with crash.
-
-    // lp.Dump();
-
-    // // exit(1);
-
-    auto it = lp.PhysicalPlan(TransactionId());
-    it->explain(std::cerr, 0);
-
-    // std::cout << it->get_tuple_desc()->to_string() << "\n";
-    // for (int i = 0; i < it->get_tuple_desc()->num_fields(); ++i) {
-    //     std::cerr << "Field: " << i << "\tname: " <<
-    //     it->get_tuple_desc()->get_field_name(i) << std::endl;
-    // }
-    for (int i = 0; i < 1; ++i) {
-        int total_size = 0;
-        int total_tuples = 0;
-        for (auto itt : *it) {
-            // std::cerr << itt->to_string() << "\n";
-            total_size += itt->to_string().size();
-            total_tuples += 1;
-        }
-        std::cerr << "Total size: " << total_size << "\n";
-        std::cerr << "Total tuples: " << total_tuples << "\n";
-    }
-    // // lt.PhysicalPlan(TransactionId());
-    // std::cerr <<"AAAAAAAAAAAAAAA\n";
-
-    return 0;
-
     while (true) {
-        std::string table_name;
-        std::cout << "Table name to seq_scan:";
-        std::cout.flush();
-
-        std::cin >> table_name;
-        TransactionId tid;
+        std::cout << "> ";
+        std::string query;
+        if (!std::getline(std::cin, query)) {
+            break;
+        }
         try {
-            // std::unique_ptr<Field> operand1 = std::make_unique<IntField>(10);
-            // std::unique_ptr<OpIterator> t1 = std::make_unique<Filter>(
-            //     Predicate(0, OpType::LESS_THAN, operand1.get()),
-            //     std::make_unique<SeqScan>(
-            //         tid, Database::get_catalog().get_table_id(table_name),
-            //         "T1"));
+            auto lp = parser->ParseQuery(query).value();  // I'm ok with crash.
+            auto it = lp.PhysicalPlan(TransactionId());
 
-            // std::cerr << "T1 table:\n";
-            // for (auto it : *t1) {
-            //     std::cerr << it->to_string() << "\n";
-            // }
-
-            // std::unique_ptr<Field> operand2 = std::make_unique<IntField>(5);
-            // std::unique_ptr<OpIterator> t2 = std::make_unique<Filter>(
-            //     Predicate(0, OpType::LESS_THAN, operand2.get()),
-            //     std::make_unique<SeqScan>(
-            //         tid, Database::get_catalog().get_table_id(table_name),
-            //         "T2"));
-
-            // std::cerr << "T2 table:\n";
-            // for (auto it : *t2) {
-            //     std::cerr << it->to_string() << "\n";
-            // }
-
-            // auto seq_scan = std::make_unique<Join>(Join(JoinPredicate(0,
-            // OpType::EQUALS, 0),
-            //                      std::move(t1), std::move(t2)));
-
-            // std::cerr << "Join table:\n";
-            // for (auto it : *seq_scan) {
-            //     std::cerr << it->to_string() << "\n";
-            // }
-
-            // auto agg = Aggregate(std::move(seq_scan), 0, 1,
-            // AggregatorOp::COUNT); Filter seq_scan =(
-
-            //     std::make_unique<SeqScan>(
-            //         tid, Database::get_catalog().get_table_id(table_name),
-            //         ""));
-
-            auto seq_scan = Join(
-                JoinPredicate(0, OpType::LESS_THAN_OR_EQ, 0),
-                std::make_unique<SeqScan>(
-                    tid, Database::get_catalog().get_table_id(table_name), ""),
-                std::make_unique<SeqScan>(
-                    tid, Database::get_catalog().get_table_id(table_name), ""));
-            // SeqScan(
-            // tid, Database::get_catalog().get_table_id(table_name), "");
-
-            std::cout << seq_scan.get_tuple_desc()->to_string() << "\n";
-            // for (int i = 0; i < 10; ++i) {
-            int total_size = 0;
-            for (auto it : seq_scan) {
-                // std::cerr << it->to_string() << "\n";
-                total_size += it->to_string().size();
+            if (FLAGS_explain) {
+                it->explain(std::cerr, 0);
             }
-            std::cerr << "Total size: " << total_size << "\n";
-            // }
+
+            auto start_time = std::chrono::steady_clock::now();
+            std::cerr << it->get_tuple_desc()->to_string() << "\n";
+            for (auto itt : *it) {
+                std::cout << itt->to_string() << "\n";
+            }
+
+            auto end_time = std::chrono::steady_clock::now();
+            std::cerr << "Query took "
+                      << std::chrono::duration_cast<std::chrono::milliseconds>(
+                             end_time - start_time)
+                             .count()
+                      << "ms\n";
+
         } catch (const std::exception& e) {
             std::cerr << "Error:" << e.what() << "\n";
         }
@@ -293,26 +240,3 @@ int main(int argc, char** argv) {
 
     return 0;
 }
-
-// Benchmark 1: bazel run --config=opt //src:main
-// Time (mean ± σ):      1.282 s ±  0.004 s    [User: 0.941 s, System: 0.311 s]
-// Range (min … max):    1.277 s …  1.288 s    10 runs
-
-// Benchmark 1: ./bazel-bin/src/main-opt
-//   Time (mean ± σ):      1.005 s ±  0.015 s    [User: 0.730 s, System: 0.274
-//   s] Range (min … max):    0.990 s …  1.035 s    10 runs
-
-// Benchmark 2: ./bazel-bin/src/main
-//   Time (mean ± σ):      1.241 s ±  0.009 s    [User: 0.943 s, System: 0.298
-//   s] Range (min … max):    1.229 s …  1.260 s    10 runs
-
-// Summary
-//   './bazel-bin/src/main-opt' ran
-//     1.23 ± 0.02 times faster than './bazel-bin/src/main'
-
-// bazel test //tests:TupleTest
-// bazel build //src:main
-// bazel run //src:main
-//  bazel run //src:main --
-//  --convert=/home/domiko/Documents/UWR/simpledb-superfastdb/data/table4.txt
-//  --types="string,int,string,string" --logtostderr=1

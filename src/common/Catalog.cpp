@@ -75,7 +75,7 @@ void Catalog::load_schema(std::string catalog_file) {
         const auto table_name = tokens.at(0);
         std::vector<const Type*> types;
         std::vector<std::string> names;
-        std::cerr << "Loading schema :";
+        std::cerr << absl::StrCat("Loading schema(", table_name, ") :");
 
         for (int i = 1; i + 1 < static_cast<int>(tokens.size()); i += 2) {
             names.push_back(tokens[i]);
