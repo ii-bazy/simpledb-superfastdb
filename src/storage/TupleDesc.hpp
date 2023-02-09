@@ -4,8 +4,8 @@
 #include <memory>
 #include <numeric>
 #include <vector>
-#include "absl/strings/str_cat.h"
 
+#include "absl/strings/str_cat.h"
 #include "src/common/Type.hpp"
 
 class TupleDesc {
@@ -35,6 +35,8 @@ class TupleDesc {
         for (int i = 0; i < size; ++i) {
             items_.emplace_back(types[i], names[i]);
         }
+
+        calc_size();
     }
 
     TupleDesc(const std::vector<const Type*>& types) {
@@ -43,6 +45,8 @@ class TupleDesc {
         for (int i = 0; i < size; ++i) {
             items_.emplace_back(types[i], "");
         }
+
+        calc_size();
     }
 
     int num_fields() const { return items_.size(); }
@@ -50,6 +54,11 @@ class TupleDesc {
     std::string get_field_name(int i) const { return items_.at(i).field_name; }
 
     const Type* get_field_type(int i) const { return items_.at(i).field_type; }
+
+    uint64_t get_size() const {
+        assert(size_ != -1);
+        return size_;
+    }
 
     int index_for_field_name(const std::string& name) const {
         for (int i = 0; i < static_cast<int>(items_.size()); ++i) {
@@ -60,13 +69,6 @@ class TupleDesc {
 
         throw std::invalid_argument(
             absl::StrCat("Field ", name, " not found."));
-    }
-
-    int get_size() const {
-        return std::accumulate(items_.begin(), items_.end(), 0,
-                               [](const int result, const auto& item) {
-                                   return result + item.field_type->get_len();
-                               });
     }
 
     static TupleDesc merge(const TupleDesc& td1, const TupleDesc td2) {
@@ -110,7 +112,17 @@ class TupleDesc {
     }
 
    private:
-    TupleDesc(std::vector<TDItem> items) : items_(std::move(items)) {}
+    TupleDesc(std::vector<TDItem> items) : items_(std::move(items)) {
+        calc_size();
+    }
+
+    void calc_size() {
+        size_ = std::accumulate(items_.begin(), items_.end(), 0,
+                                [](const int result, const auto& item) {
+                                    return result + item.field_type->get_len();
+                                });
+    }
 
     std::vector<TDItem> items_;
+    uint64_t size_ = -1;
 };

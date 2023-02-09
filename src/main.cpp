@@ -15,12 +15,12 @@
 #include "src/execution/Operator.hpp"
 #include "src/execution/SeqScan.hpp"
 #include "src/execution/StringAggregator.hpp"
+#include "src/execution/logical_plan/logical_plan.hpp"
+#include "src/parser.hpp"
 #include "src/storage/BufferPool.hpp"
 #include "src/storage/IntField.hpp"
 #include "src/storage/Tuple.hpp"
 #include "src/storage/TupleDesc.hpp"
-#include "src/execution/logical_plan/logical_plan.hpp"
-#include "src/parser.hpp"
 
 DEFINE_string(convert, "", "Path to file to convert to binary.");
 DEFINE_string(types, "", "Types of columns in table.");
@@ -134,8 +134,6 @@ void convert(const std::string file_name, std::vector<const Type*> types) {
     out_file.close();
 }
 
-
-
 int main(int argc, char** argv) {
     gflags::ParseCommandLineFlags(&argc, &argv, true);
     google::InitGoogleLogging(argv[0]);
@@ -161,21 +159,38 @@ int main(int argc, char** argv) {
 
     Database::get_catalog().load_schema("data/schema.txt");
 
-    // const auto query = "SELECT count(age) FROM table3 WHERE country = 'Italy'";
+    // const auto query = "SELECT count(age) FROM table3 WHERE country =
+    // 'Italy'";
 
+    // TODO: NIE DA SIE SELECT age, count(*) FROM table3 WHERE country = 'Italy'
+    // GROUP BY age bo index_for_field_name throwuje dla * tak powinno byc ?????
 
-    // TODO: NIE DA SIE SELECT age, count(*) FROM table3 WHERE country = 'Italy' GROUP BY age
-    // bo index_for_field_name throwuje dla * tak powinno byc ?????
+    // const auto query =
+    //     "SELECT * FROM table3, table3 t3 WHERE t3.age = 4 AND table3.age >= "
+    //     "t3.age";
 
-    // const auto query = "SELECT * FROM table3, table3 t3 WHERE t3.age = 4 AND table3.age >= t3.age";
-    const auto query = "SELECT * FROM table3, table1, table3 t3 WHERE t3.age <= table3.age AND table3.age < table1.col1 AND t3.age = 4";
-    // const auto query = "SELECT * FROM table3, table1, table3 t3, table4 t4, table5 t5 WHERE table3.age < table1.col1 and t3.age <= table3.age AND t3.age < 4 AND t4.age >= 2 AND t5.country = Ukraine";
+    // const auto query =
+    //     "SELECT * FROM table3, table1, table3 t3 WHERE t3.age <= table3.age "
+    //     "AND table3.age < table1.col1 AND t3.age = 4 ";
 
-    // const auto query = "SELECT * FROM table3 WHERE table3.country = 'Italy'";
-    
+    // const auto
+    // query = "SELECT * FROM table3, table1, table3 t3, table4 t4, table5 t5
+    // WHERE table3.age < table1.col1 and t3.age <= table3.age AND t3.age < 4
+    // AND t4.age >= 2 AND t5.country = Ukraine";
+
+    // const auto query = "SELECT * FROM table3 WHERE table3.country =
+    // 'Italy'";
+
+    // const auto query = "SELECT * FROM T2 WHERE T2.col1 <= 40 AND T2.col2
+    // > 0";
+    // const auto query =
+    //     "SELECT * FROM T1, T2 WHERE T1.col1 <= 10 AND T2.col2 >= T1.col2";
+    const auto query =
+        "SELECT * FROM T1, T2 t2, T2 WHERE T1.col1 <= 1000 AND t2.col2 = "
+        "T1.col2 AND T2.col2 >= T1.col2";
+
     std::unique_ptr<Parser> parser = std::make_unique<Parser>();
-    auto lp = parser->ParseQuery(query).value(); // I'm ok with crash.
-    
+    auto lp = parser->ParseQuery(query).value();  // I'm ok with crash.
 
     // lp.Dump();
 
@@ -186,15 +201,19 @@ int main(int argc, char** argv) {
 
     // std::cout << it->get_tuple_desc()->to_string() << "\n";
     // for (int i = 0; i < it->get_tuple_desc()->num_fields(); ++i) {
-    //     std::cerr << "Field: " << i << "\tname: " << it->get_tuple_desc()->get_field_name(i) << std::endl;
+    //     std::cerr << "Field: " << i << "\tname: " <<
+    //     it->get_tuple_desc()->get_field_name(i) << std::endl;
     // }
     for (int i = 0; i < 1; ++i) {
         int total_size = 0;
+        int total_tuples = 0;
         for (auto itt : *it) {
             // std::cerr << itt->to_string() << "\n";
             total_size += itt->to_string().size();
+            total_tuples += 1;
         }
         std::cerr << "Total size: " << total_size << "\n";
+        std::cerr << "Total tuples: " << total_tuples << "\n";
     }
     // // lt.PhysicalPlan(TransactionId());
     // std::cerr <<"AAAAAAAAAAAAAAA\n";
@@ -251,11 +270,12 @@ int main(int argc, char** argv) {
 
             auto seq_scan = Join(
                 JoinPredicate(0, OpType::LESS_THAN_OR_EQ, 0),
-                std::make_unique<SeqScan>(tid, Database::get_catalog().get_table_id(table_name), ""),
-                std::make_unique<SeqScan>(tid, Database::get_catalog().get_table_id(table_name), "")
-            );
-                // SeqScan(
-                // tid, Database::get_catalog().get_table_id(table_name), "");
+                std::make_unique<SeqScan>(
+                    tid, Database::get_catalog().get_table_id(table_name), ""),
+                std::make_unique<SeqScan>(
+                    tid, Database::get_catalog().get_table_id(table_name), ""));
+            // SeqScan(
+            // tid, Database::get_catalog().get_table_id(table_name), "");
 
             std::cout << seq_scan.get_tuple_desc()->to_string() << "\n";
             // for (int i = 0; i < 10; ++i) {
@@ -279,13 +299,13 @@ int main(int argc, char** argv) {
 // Range (min … max):    1.277 s …  1.288 s    10 runs
 
 // Benchmark 1: ./bazel-bin/src/main-opt
-//   Time (mean ± σ):      1.005 s ±  0.015 s    [User: 0.730 s, System: 0.274 s]
-//   Range (min … max):    0.990 s …  1.035 s    10 runs
- 
+//   Time (mean ± σ):      1.005 s ±  0.015 s    [User: 0.730 s, System: 0.274
+//   s] Range (min … max):    0.990 s …  1.035 s    10 runs
+
 // Benchmark 2: ./bazel-bin/src/main
-//   Time (mean ± σ):      1.241 s ±  0.009 s    [User: 0.943 s, System: 0.298 s]
-//   Range (min … max):    1.229 s …  1.260 s    10 runs
- 
+//   Time (mean ± σ):      1.241 s ±  0.009 s    [User: 0.943 s, System: 0.298
+//   s] Range (min … max):    1.229 s …  1.260 s    10 runs
+
 // Summary
 //   './bazel-bin/src/main-opt' ran
 //     1.23 ± 0.02 times faster than './bazel-bin/src/main'
@@ -293,4 +313,6 @@ int main(int argc, char** argv) {
 // bazel test //tests:TupleTest
 // bazel build //src:main
 // bazel run //src:main
-//  bazel run //src:main -- --convert=/home/domiko/Documents/UWR/simpledb-superfastdb/data/table4.txt --types="string,int,string,string" --logtostderr=1
+//  bazel run //src:main --
+//  --convert=/home/domiko/Documents/UWR/simpledb-superfastdb/data/table4.txt
+//  --types="string,int,string,string" --logtostderr=1

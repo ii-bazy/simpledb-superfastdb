@@ -32,8 +32,8 @@ class Filter : public Operator {
     }
 
     void explain(std::ostream& os, int indent) override {
-        os << std::string(indent, ' ') + "-> Filter with: " << p_.to_string()
-           << "\n";
+        os << std::string(indent, ' ') + "-> Filter with: "
+           << p_.to_string(*td_) << "\n";
         child_->explain(os, indent + child_indent_);
     }
 

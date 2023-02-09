@@ -19,9 +19,12 @@ class JoinPredicate {
 
     OpType get_op_type() const { return op_; }
 
-    std::string to_string() const {
-        return absl::StrCat("col= ", field1_index_, " ", ::to_string(op_),
-                            " col= ", field2_index_);
+    std::string to_string(const TupleDesc& td1, const TupleDesc& td2) const {
+        return absl::StrCat(td1.get_field_name(field1_index_), " ",
+                            ::to_string(op_), " ",
+                            td2.get_field_name(field2_index_));
+        // return absl::StrCat("col= ", field1_index_, " ", ::to_string(op_),
+        //                     " col= ", field2_index_);
     }
 
    private:
